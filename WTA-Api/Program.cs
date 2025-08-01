@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using WTA_Api.Data;
 using WTA_Api.Models;
+using WTA_Api.Services;
 
 namespace WTA_Api
 {
@@ -37,6 +38,9 @@ namespace WTA_Api
                                       .AllowAnyMethod()
                                       .AllowAnyHeader());
             });
+
+            builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+            builder.Services.AddScoped<AccountService>();
 
             var app = builder.Build();
 

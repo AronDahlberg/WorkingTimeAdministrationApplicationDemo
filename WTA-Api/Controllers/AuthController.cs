@@ -2,14 +2,15 @@
 using Microsoft.AspNetCore.Mvc;
 using WTA_Api.DTOs;
 using WTA_Api.Models;
+using WTA_Api.Services;
 
 namespace WTA_Api.Controllers
 {
     [Route("[controller]")]
     [ApiController]
-    public class AuthController(UserManager<ApiUser> userManager) : Controller
+    public class AuthController(AccountService accountService) : Controller
     {
-        private readonly UserManager<ApiUser> userManager = userManager;
+        private readonly AccountService accountService = accountService;
 
         [HttpPost]
         [Route("register")]
@@ -17,20 +18,9 @@ namespace WTA_Api.Controllers
         {
             try
             {
-                ApiUser user = accountManager.CreateUserFromDto(userRegistrationDto);
+                await accountService.CreateUserFromDtoAsync(userRegistrationDto);
 
-                IdentityResult result = await userManager.CreateAsync(user, userRegistrationDto.Password);
-
-                if (result.Succeeded)
-                {
-                    await userManager.AddToRoleAsync(user, "User");
-
-                    return Ok(new { Message = "User registered successfully." });
-                }
-                else
-                {
-                    return BadRequest(new { Errors = result.Errors.Select(e => e.Description) });
-                }
+                return Ok(new { Message = "User registered successfully." });
             }
             catch (Exception ex)
             {
