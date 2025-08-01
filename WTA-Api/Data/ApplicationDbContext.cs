@@ -32,7 +32,7 @@ namespace WTA_Api.Data
             builder.Entity<Employee>().HasData(
                 new Employee
                 {
-                    EmployeeId = 0,
+                    EmployeeId = -1,
                     FirstName = "Admin",
                     LastName = "User",
                     SocialSecurityNumber = "000000000000",
