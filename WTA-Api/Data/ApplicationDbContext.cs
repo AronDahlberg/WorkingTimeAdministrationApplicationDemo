@@ -1,11 +1,14 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using WTA_Api.Models;
 
 namespace WTA_Api.Data
 {
     public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext(options)
     {
+        public DbSet<Employee> Employees { get; set; } = null!;
+        public DbSet<WorkEntry> WorkEntries { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
