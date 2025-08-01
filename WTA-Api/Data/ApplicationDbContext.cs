@@ -28,6 +28,44 @@ namespace WTA_Api.Data
                     Id = "6e378458-45af-4c71-b376-ad5b22a5f92e"
                 }
             );
+
+            builder.Entity<Employee>().HasData(
+                new Employee
+                {
+                    EmployeeId = 0,
+                    FirstName = "Admin",
+                    LastName = "User",
+                    SocialSecurityNumber = "000000000000",
+                    PhoneNumber = "123-456-7890",
+                    EmergencyContactNumber = "098-765-4321",
+                    Country = String.Empty,
+                    City = String.Empty,
+                    Address = String.Empty,
+                    PostalCode = "12345"
+                }
+            );
+
+            builder.Entity<ApiUser>().HasData(
+                new ApiUser
+                {
+                    Id = "989ac103-e470-4287-b345-c6bbc77bbdd5",
+                    Email = "admin@wta.com",
+                    NormalizedEmail = "ADMIN@WTA.COM",
+                    UserName = "admin@wta.com",
+                    NormalizedUserName = "ADMIN@WTA.COM",
+                    EmailConfirmed = true,
+                    PasswordHash = new PasswordHasher<ApiUser>().HashPassword(null, "Admin123!"),
+                    EmployeeId = 0,
+                }
+            );
+
+            builder.Entity<IdentityUserRole<string>>().HasData(
+                new IdentityUserRole<string>
+                {
+                    UserId = "989ac103-e470-4287-b345-c6bbc77bbdd5",
+                    RoleId = "6e378458-45af-4c71-b376-ad5b22a5f92e"
+                }
+            );
         }
     }
 }
