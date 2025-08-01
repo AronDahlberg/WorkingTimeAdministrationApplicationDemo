@@ -62,5 +62,20 @@ namespace WTA_Api.Services
 
             await userManager.AddToRoleAsync(user, "User");
         }
+
+        public async Task<SignInResult> LoginAsync(UserLoginDto userLoginDto)
+        {
+            if (userLoginDto == null)
+            {
+                throw new ArgumentNullException(nameof(userLoginDto), "User login data cannot be null.");
+            }
+            var user = await userManager.FindByEmailAsync(userLoginDto.Email);
+            if (user == null)
+            {
+                return SignInResult.Failed;
+            }
+            var result = await userManager.CheckPasswordAsync(user, userLoginDto.Password);
+            return result ? SignInResult.Success : SignInResult.Failed;
+        }
     }
 }

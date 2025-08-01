@@ -27,5 +27,27 @@ namespace WTA_Api.Controllers
                 return StatusCode(500, new { Message = "An error occurred while registering the user.", Details = ex.Message });
             }
         }
+
+        [HttpPost]
+        [Route("login")]
+        public async Task<IActionResult> Login(UserLoginDto userLoginDto)
+        {
+            try
+            {
+                var result = await accountService.LoginAsync(userLoginDto);
+                if (result.Succeeded)
+                {
+                    return Ok(new { Message = "User logged in successfully." });
+                }
+                else
+                {
+                    return Unauthorized(new { Message = "Invalid login attempt." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while logging in.", Details = ex.Message });
+            }
+        }
     }
 }
