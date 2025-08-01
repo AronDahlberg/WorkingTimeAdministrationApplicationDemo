@@ -10,6 +10,7 @@ namespace WTA_Api.DTOs
 
         [Required]
         [StringLength(100, ErrorMessage = "Password must be at least 6 characters long and no more than 100 characters.", MinimumLength = 6)]
+        [DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
 
         [Required]
