@@ -42,7 +42,7 @@ namespace WTA_Api.Migrations
                     City = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Address = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     PostalCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    HourlyWage = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    HourlyWage = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -110,7 +110,7 @@ namespace WTA_Api.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     StartDateTime = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Duration = table.Column<TimeSpan>(type: "time", nullable: false),
-                    TotalWage = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    TotalWage = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     EmployeeId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -217,6 +217,21 @@ namespace WTA_Api.Migrations
                     { "6e378458-45af-4c71-b376-ad5b22a5f92e", null, "Admin", "ADMIN" },
                     { "bbaf5542-1f87-4f38-a293-ad48fba5bea1", null, "User", "USER" }
                 });
+
+            migrationBuilder.InsertData(
+                table: "Employees",
+                columns: new[] { "EmployeeId", "Address", "City", "Country", "EmergencyContactNumber", "FirstName", "HourlyWage", "LastName", "PhoneNumber", "PostalCode", "SocialSecurityNumber" },
+                values: new object[] { -1, "", "", "", "098-765-4321", "Admin", 0m, "User", "123-456-7890", "12345", "000000000000" });
+
+            migrationBuilder.InsertData(
+                table: "AspNetUsers",
+                columns: new[] { "Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "EmployeeId", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName" },
+                values: new object[] { "989ac103-e470-4287-b345-c6bbc77bbdd5", 0, "978e7652-8b6f-40b0-a4df-ebe1377f45e3", "admin@wta.com", true, -1, false, null, "ADMIN@WTA.COM", "ADMIN@WTA.COM", "AQAAAAIAAYagAAAAEMsxll2/yLTJVz2fjwCfcicYK/v+hrgFoXGHtnKhz9CTkMLgolTxDp2rFOY+r3uaYQ==", null, false, "c96a8b6d-2c93-4eff-bf5d-166bba3bd2ad", false, "admin@wta.com" });
+
+            migrationBuilder.InsertData(
+                table: "AspNetUserRoles",
+                columns: new[] { "RoleId", "UserId" },
+                values: new object[] { "6e378458-45af-4c71-b376-ad5b22a5f92e", "989ac103-e470-4287-b345-c6bbc77bbdd5" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",

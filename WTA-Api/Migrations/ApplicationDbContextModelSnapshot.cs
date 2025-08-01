@@ -250,16 +250,16 @@ namespace WTA_Api.Migrations
                         {
                             Id = "989ac103-e470-4287-b345-c6bbc77bbdd5",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "a5ef91d2-cf1c-4ed7-94e6-b1a72cbc225b",
+                            ConcurrencyStamp = "978e7652-8b6f-40b0-a4df-ebe1377f45e3",
                             Email = "admin@wta.com",
                             EmailConfirmed = true,
                             EmployeeId = -1,
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@WTA.COM",
                             NormalizedUserName = "ADMIN@WTA.COM",
-                            PasswordHash = "AQAAAAIAAYagAAAAEP07skfXJF6DcH7IoQs4I8rkf0rk5HmQY4fiNERxuS5IV8+9X0XvpFtriSrOExeRGw==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEMsxll2/yLTJVz2fjwCfcicYK/v+hrgFoXGHtnKhz9CTkMLgolTxDp2rFOY+r3uaYQ==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "22565702-4fa4-48e7-b1f4-8b0b5a753d77",
+                            SecurityStamp = "c96a8b6d-2c93-4eff-bf5d-166bba3bd2ad",
                             TwoFactorEnabled = false,
                             UserName = "admin@wta.com"
                         });

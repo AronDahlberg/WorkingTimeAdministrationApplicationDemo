@@ -12,7 +12,7 @@ using WTA_Api.Data;
 namespace WTA_Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250801155704_init")]
+    [Migration("20250801181241_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -151,6 +151,13 @@ namespace WTA_Api.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("AspNetUserRoles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            UserId = "989ac103-e470-4287-b345-c6bbc77bbdd5",
+                            RoleId = "6e378458-45af-4c71-b376-ad5b22a5f92e"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
@@ -240,6 +247,25 @@ namespace WTA_Api.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "989ac103-e470-4287-b345-c6bbc77bbdd5",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "978e7652-8b6f-40b0-a4df-ebe1377f45e3",
+                            Email = "admin@wta.com",
+                            EmailConfirmed = true,
+                            EmployeeId = -1,
+                            LockoutEnabled = false,
+                            NormalizedEmail = "ADMIN@WTA.COM",
+                            NormalizedUserName = "ADMIN@WTA.COM",
+                            PasswordHash = "AQAAAAIAAYagAAAAEMsxll2/yLTJVz2fjwCfcicYK/v+hrgFoXGHtnKhz9CTkMLgolTxDp2rFOY+r3uaYQ==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "c96a8b6d-2c93-4eff-bf5d-166bba3bd2ad",
+                            TwoFactorEnabled = false,
+                            UserName = "admin@wta.com"
+                        });
                 });
 
             modelBuilder.Entity("WTA_Api.Models.Employee", b =>
@@ -275,6 +301,7 @@ namespace WTA_Api.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<decimal>("HourlyWage")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("LastName")
@@ -298,6 +325,22 @@ namespace WTA_Api.Migrations
                     b.HasKey("EmployeeId");
 
                     b.ToTable("Employees");
+
+                    b.HasData(
+                        new
+                        {
+                            EmployeeId = -1,
+                            Address = "",
+                            City = "",
+                            Country = "",
+                            EmergencyContactNumber = "098-765-4321",
+                            FirstName = "Admin",
+                            HourlyWage = 0m,
+                            LastName = "User",
+                            PhoneNumber = "123-456-7890",
+                            PostalCode = "12345",
+                            SocialSecurityNumber = "000000000000"
+                        });
                 });
 
             modelBuilder.Entity("WTA_Api.Models.WorkEntry", b =>
@@ -318,6 +361,7 @@ namespace WTA_Api.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("TotalWage")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("WorkEntryId");
