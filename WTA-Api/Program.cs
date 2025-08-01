@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using WTA_Api.Data;
+using WTA_Api.Models;
 
 namespace WTA_Api
 {
@@ -20,7 +21,7 @@ namespace WTA_Api
                 .GetSection("ConnectionStrings")["WTA_ApiDb"])
             );
 
-            builder.Services.AddIdentityCore<IdentityUser>()
+            builder.Services.AddIdentityCore<ApiUser>()
                 .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
 
