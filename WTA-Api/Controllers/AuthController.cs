@@ -8,9 +8,9 @@ namespace WTA_Api.Controllers
 {
     [Route("[controller]")]
     [ApiController]
-    public class AuthController(AccountService accountService) : Controller
+    public class AuthController(IAccountService accountService) : Controller
     {
-        private readonly AccountService accountService = accountService;
+        private readonly IAccountService accountService = accountService;
 
         [HttpPost]
         [Route("register")]

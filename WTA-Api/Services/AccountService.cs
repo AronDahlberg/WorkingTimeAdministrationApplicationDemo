@@ -5,7 +5,7 @@ using WTA_Api.Models;
 
 namespace WTA_Api.Services
 {
-    public class AccountService(UserManager<ApiUser> userManager, IEmployeeRepository employeeRepository)
+    public class AccountService(UserManager<ApiUser> userManager, IEmployeeRepository employeeRepository) : IAccountService
     {
         private readonly UserManager<ApiUser> userManager = userManager;
         private readonly IEmployeeRepository employeeRepository = employeeRepository;
