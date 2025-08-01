@@ -55,7 +55,7 @@ namespace WTA_Api.Data
                     NormalizedUserName = "ADMIN@WTA.COM",
                     EmailConfirmed = true,
                     PasswordHash = new PasswordHasher<ApiUser>().HashPassword(null, "Admin123!"),
-                    EmployeeId = 0,
+                    EmployeeId = -1,
                 }
             );
 
