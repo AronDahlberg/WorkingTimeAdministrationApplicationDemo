@@ -12,6 +12,11 @@ namespace WTA_Api.Services
 
         public async Task CreateUserFromDtoAsync(UserRegistrationDto userRegistrationDto)
         {
+            if (userRegistrationDto == null)
+            {
+                throw new ArgumentNullException(nameof(userRegistrationDto), "User registration data cannot be null.");
+            }
+
             var existingUser = await userManager.FindByEmailAsync(userRegistrationDto.Email);
 
             if (existingUser != null)
