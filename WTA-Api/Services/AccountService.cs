@@ -1,14 +1,19 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using WTA_Api.Data;
 using WTA_Api.DTOs;
 using WTA_Api.Models;
+using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
 namespace WTA_Api.Services
 {
-    public class AccountService(UserManager<ApiUser> userManager, IEmployeeRepository employeeRepository) : IAccountService
+    public class AccountService(UserManager<ApiUser> userManager, IConfiguration configuration,  IEmployeeRepository employeeRepository) : IAccountService
     {
         private readonly UserManager<ApiUser> userManager = userManager;
         private readonly IEmployeeRepository employeeRepository = employeeRepository;
+        private readonly IConfiguration configuration = configuration;
 
         public async Task CreateUserFromDtoAsync(UserRegistrationDto userRegistrationDto)
         {
@@ -68,7 +73,7 @@ namespace WTA_Api.Services
             await userManager.AddToRoleAsync(user, "User");
         }
 
-        public async Task<SignInResult> LoginAsync(UserLoginDto userLoginDto)
+        public async Task<AuthResponse?> LoginAsync(UserLoginDto userLoginDto)
         {
             if (userLoginDto == null)
             {
@@ -77,10 +82,51 @@ namespace WTA_Api.Services
             var user = await userManager.FindByEmailAsync(userLoginDto.Email);
             if (user == null)
             {
-                return SignInResult.Failed;
+                return null;
             }
             var result = await userManager.CheckPasswordAsync(user, userLoginDto.Password);
-            return result ? SignInResult.Success : SignInResult.Failed;
+
+            var tokenString = await GenerateToken(user);
+
+            var response = new AuthResponse
+            {
+                Email = user.Email,
+                Token = tokenString,
+                UserId = user.Id
+            };
+
+            return response;
+        }
+
+        private async Task<string> GenerateToken(ApiUser user)
+        {
+            var securityKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(configuration["JwtSettings:Key"] ?? throw new Exception("Could not find secrete key to genereate token")));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var roles = await userManager.GetRolesAsync(user);
+            var roleClaims = roles.Select(role => new Claim(ClaimTypes.Role, role)).ToList();
+
+            var userClaims = await userManager.GetClaimsAsync(user);
+
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim("EmployeeId", user.EmployeeId.ToString())
+            }
+            .Union(roleClaims)
+            .Union(userClaims);
+
+            var token = new JwtSecurityToken(
+                issuer: configuration["JwtSettings:Issuer"],
+                audience: configuration["JwtSettings:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(Convert.ToInt32(configuration["JwtSettings:DurationInMinutes"])),
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

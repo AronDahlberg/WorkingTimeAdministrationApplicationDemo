@@ -30,14 +30,14 @@ namespace WTA_Api.Controllers
 
         [HttpPost]
         [Route("login")]
-        public async Task<IActionResult> Login(UserLoginDto userLoginDto)
+        public async Task<ActionResult<AuthResponse>> Login(UserLoginDto userLoginDto)
         {
             try
             {
-                var result = await accountService.LoginAsync(userLoginDto);
-                if (result.Succeeded)
+                AuthResponse? response = await accountService.LoginAsync(userLoginDto);
+                if (response != null)
                 {
-                    return Ok(new { Message = "User logged in successfully." });
+                    return Ok(response);
                 }
                 else
                 {
