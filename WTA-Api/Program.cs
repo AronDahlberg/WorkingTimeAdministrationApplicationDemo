@@ -1,4 +1,7 @@
 
+using Microsoft.AspNetCore.Identity;
+using WTA_Api.Data;
+
 namespace WTA_Api
 {
     public class Program
@@ -8,6 +11,10 @@ namespace WTA_Api
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+
+            builder.Services.AddIdentityCore<IdentityUser>()
+                .AddRoles<IdentityRole>()
+                .AddEntityFrameworkStores<ApplicationDbContext>();
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
