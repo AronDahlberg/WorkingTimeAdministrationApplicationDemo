@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>WTA_Api</RootNamespace>
+    <UserSecretsId>30791868-0a75-401a-91ec-189290f8b2ca</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
