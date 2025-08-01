@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace WTA_Api.Models
 {
@@ -49,6 +50,7 @@ namespace WTA_Api.Models
 
         [Range(0, 1000, ErrorMessage = "Hourly wage must be between 0 and 1000.")]
         [DataType(DataType.Currency)]
+        [Precision(18, 2)]
         public decimal HourlyWage { get; set; }
     }
 }

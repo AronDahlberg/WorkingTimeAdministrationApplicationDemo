@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WTA_Api.Models
@@ -17,6 +18,7 @@ namespace WTA_Api.Models
 
         [Range(0, 24000, ErrorMessage = "Total wage must be between 0 and 24000.")]
         [DataType(DataType.Currency)]
+        [Precision(18, 2)]
         public decimal TotalWage { get; set; }
 
         [Required]
