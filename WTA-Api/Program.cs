@@ -1,5 +1,6 @@
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using WTA_Api.Data;
 
 namespace WTA_Api
@@ -11,6 +12,13 @@ namespace WTA_Api
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+
+            builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(
+                new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build()
+                .GetSection("ConnectionStrings")["WTA_ApiDb"])
+            );
 
             builder.Services.AddIdentityCore<IdentityUser>()
                 .AddRoles<IdentityRole>()
