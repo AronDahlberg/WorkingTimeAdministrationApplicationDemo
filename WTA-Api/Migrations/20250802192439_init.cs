@@ -221,17 +221,29 @@ namespace WTA_Api.Migrations
             migrationBuilder.InsertData(
                 table: "Employees",
                 columns: new[] { "EmployeeId", "Address", "City", "Country", "EmergencyContactNumber", "FirstName", "HourlyWage", "LastName", "PhoneNumber", "PostalCode", "SocialSecurityNumber" },
-                values: new object[] { -1, "", "", "", "098-765-4321", "Admin", 0m, "User", "123-456-7890", "12345", "000000000000" });
+                values: new object[,]
+                {
+                    { -2, "", "", "", "098-765-4321", "Test", 0m, "User", "123-456-7890", "12345", "111111111111" },
+                    { -1, "", "", "", "098-765-4321", "Admin", 0m, "User", "123-456-7890", "12345", "000000000000" }
+                });
 
             migrationBuilder.InsertData(
                 table: "AspNetUsers",
                 columns: new[] { "Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "EmployeeId", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName" },
-                values: new object[] { "989ac103-e470-4287-b345-c6bbc77bbdd5", 0, "978e7652-8b6f-40b0-a4df-ebe1377f45e3", "admin@wta.com", true, -1, false, null, "ADMIN@WTA.COM", "ADMIN@WTA.COM", "AQAAAAIAAYagAAAAEMsxll2/yLTJVz2fjwCfcicYK/v+hrgFoXGHtnKhz9CTkMLgolTxDp2rFOY+r3uaYQ==", null, false, "c96a8b6d-2c93-4eff-bf5d-166bba3bd2ad", false, "admin@wta.com" });
+                values: new object[,]
+                {
+                    { "5da9e3d2-c25a-4c00-b352-e5b20a15fb88", 0, "116db6ce-cce3-4f82-be50-e40864cf06ef", "test.user@wta.com", true, -2, false, null, "TEST.USER@WTA.COM", "TEST.USER@WTA.COM", "AQAAAAIAAYagAAAAEDbxCitSaX6H+Xrbyn6biZbT7K46gOsU5bB7e3VzwLJWX1m+Z+OqtRcfG2uAOeDF3w==", null, false, "4fe6acca-a34c-4c3b-93a8-be2743c564b3", false, "test.user@wta.com" },
+                    { "989ac103-e470-4287-b345-c6bbc77bbdd5", 0, "dc57629c-16d2-4ac4-a40e-2ae7e8918b6a", "admin@wta.com", true, -1, false, null, "ADMIN@WTA.COM", "ADMIN@WTA.COM", "AQAAAAIAAYagAAAAEJIhhQGiHP9ifzGUfMm+L1VWeh7bEzf76cwRIqCTAV93PaKJHi8Egkopoe8uhCyC3w==", null, false, "d67763e5-7081-46b4-b76d-019eb5407cc0", false, "admin@wta.com" }
+                });
 
             migrationBuilder.InsertData(
                 table: "AspNetUserRoles",
                 columns: new[] { "RoleId", "UserId" },
-                values: new object[] { "6e378458-45af-4c71-b376-ad5b22a5f92e", "989ac103-e470-4287-b345-c6bbc77bbdd5" });
+                values: new object[,]
+                {
+                    { "bbaf5542-1f87-4f38-a293-ad48fba5bea1", "5da9e3d2-c25a-4c00-b352-e5b20a15fb88" },
+                    { "6e378458-45af-4c71-b376-ad5b22a5f92e", "989ac103-e470-4287-b345-c6bbc77bbdd5" }
+                });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",

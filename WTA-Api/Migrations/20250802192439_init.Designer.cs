@@ -12,7 +12,7 @@ using WTA_Api.Data;
 namespace WTA_Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250801181241_init")]
+    [Migration("20250802192439_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -157,6 +157,11 @@ namespace WTA_Api.Migrations
                         {
                             UserId = "989ac103-e470-4287-b345-c6bbc77bbdd5",
                             RoleId = "6e378458-45af-4c71-b376-ad5b22a5f92e"
+                        },
+                        new
+                        {
+                            UserId = "5da9e3d2-c25a-4c00-b352-e5b20a15fb88",
+                            RoleId = "bbaf5542-1f87-4f38-a293-ad48fba5bea1"
                         });
                 });
 
@@ -253,18 +258,35 @@ namespace WTA_Api.Migrations
                         {
                             Id = "989ac103-e470-4287-b345-c6bbc77bbdd5",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "978e7652-8b6f-40b0-a4df-ebe1377f45e3",
+                            ConcurrencyStamp = "dc57629c-16d2-4ac4-a40e-2ae7e8918b6a",
                             Email = "admin@wta.com",
                             EmailConfirmed = true,
                             EmployeeId = -1,
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@WTA.COM",
                             NormalizedUserName = "ADMIN@WTA.COM",
-                            PasswordHash = "AQAAAAIAAYagAAAAEMsxll2/yLTJVz2fjwCfcicYK/v+hrgFoXGHtnKhz9CTkMLgolTxDp2rFOY+r3uaYQ==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEJIhhQGiHP9ifzGUfMm+L1VWeh7bEzf76cwRIqCTAV93PaKJHi8Egkopoe8uhCyC3w==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "c96a8b6d-2c93-4eff-bf5d-166bba3bd2ad",
+                            SecurityStamp = "d67763e5-7081-46b4-b76d-019eb5407cc0",
                             TwoFactorEnabled = false,
                             UserName = "admin@wta.com"
+                        },
+                        new
+                        {
+                            Id = "5da9e3d2-c25a-4c00-b352-e5b20a15fb88",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "116db6ce-cce3-4f82-be50-e40864cf06ef",
+                            Email = "test.user@wta.com",
+                            EmailConfirmed = true,
+                            EmployeeId = -2,
+                            LockoutEnabled = false,
+                            NormalizedEmail = "TEST.USER@WTA.COM",
+                            NormalizedUserName = "TEST.USER@WTA.COM",
+                            PasswordHash = "AQAAAAIAAYagAAAAEDbxCitSaX6H+Xrbyn6biZbT7K46gOsU5bB7e3VzwLJWX1m+Z+OqtRcfG2uAOeDF3w==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "4fe6acca-a34c-4c3b-93a8-be2743c564b3",
+                            TwoFactorEnabled = false,
+                            UserName = "test.user@wta.com"
                         });
                 });
 
@@ -340,6 +362,20 @@ namespace WTA_Api.Migrations
                             PhoneNumber = "123-456-7890",
                             PostalCode = "12345",
                             SocialSecurityNumber = "000000000000"
+                        },
+                        new
+                        {
+                            EmployeeId = -2,
+                            Address = "",
+                            City = "",
+                            Country = "",
+                            EmergencyContactNumber = "098-765-4321",
+                            FirstName = "Test",
+                            HourlyWage = 0m,
+                            LastName = "User",
+                            PhoneNumber = "123-456-7890",
+                            PostalCode = "12345",
+                            SocialSecurityNumber = "111111111111"
                         });
                 });
 
