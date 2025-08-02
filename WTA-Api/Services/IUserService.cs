@@ -1,0 +1,9 @@
+﻿using WTA_Api.DTOs;
+
+namespace WTA_Api.Services
+{
+    public interface IUserService
+    {
+        Task<List<UserDto>> GetAllUsersAsync();
+    }
+}
