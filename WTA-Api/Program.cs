@@ -88,6 +88,7 @@ namespace WTA_Api
             });
 
             builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+            builder.Services.AddScoped<IWorkEntryRepository, WorkEntryRepository>();
             builder.Services.AddScoped<IAccountService, AccountService>();
             builder.Services.AddScoped<IUserService, UserService>();
 
