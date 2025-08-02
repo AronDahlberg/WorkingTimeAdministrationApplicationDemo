@@ -84,7 +84,7 @@ namespace WTA_Api.Services
                 throw new ArgumentNullException(nameof(user), "User cannot be null.");
             }
 
-            var apiUser = await userManager.Users.FirstOrDefaultAsync(u => u.Id == user.UserId) ?? throw new KeyNotFoundException($"User with ID {user.UserId} not found.");
+            var apiUser = await userManager.Users.Include(u => u.Employee).FirstOrDefaultAsync(u => u.Id == user.UserId) ?? throw new KeyNotFoundException($"User with ID {user.UserId} not found.");
 
             if (!isAdmin && apiUser.Employee.HourlyWage != user.HourlyWage)
             {
