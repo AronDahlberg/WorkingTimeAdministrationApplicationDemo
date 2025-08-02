@@ -77,14 +77,14 @@ namespace WTA_Api.Services
             return userDto;
         }
 
-        public Task<bool> UpdateUserAsync(UserDto user, bool isAdmin)
+        public async Task<bool> UpdateUserAsync(UserDto user, bool isAdmin)
         {
             if (user == null)
             {
                 throw new ArgumentNullException(nameof(user), "User cannot be null.");
             }
 
-            var apiUser = userManager.Users.FirstOrDefault(u => u.Id == user.UserId) ?? throw new KeyNotFoundException($"User with ID {user.UserId} not found.");
+            var apiUser = await userManager.Users.FirstOrDefaultAsync(u => u.Id == user.UserId) ?? throw new KeyNotFoundException($"User with ID {user.UserId} not found.");
 
             if (!isAdmin && apiUser.Employee.HourlyWage != user.HourlyWage)
             {
@@ -105,7 +105,7 @@ namespace WTA_Api.Services
 
             var result = userManager.UpdateAsync(apiUser).Result;
 
-            return Task.FromResult(result.Succeeded);
+            return result.Succeeded;
         }
     }
 }
