@@ -57,24 +57,35 @@ namespace WTA_Api.Controllers
         [Route("UpdateUser")]
         public async Task<IActionResult> UpdateUserData(UserDto user)
         {
-            var tokenUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (tokenUserId == null)
-                return Unauthorized();
-
-            var isAdmin = User.IsInRole("Admin");
-
-            if (!isAdmin && user.UserId != tokenUserId)
-                return Forbid();
-
-            var updateresult = await userService.UpdateUserAsync(user, isAdmin);
-
-            if (!updateresult)
+            try
             {
-                return BadRequest(new { Message = "Failed to update user data." });
-            }
+                var tokenUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            return Ok(new { Message = "User data updated successfully." });
+                if (tokenUserId == null)
+                    return Unauthorized();
+
+                var isAdmin = User.IsInRole("Admin");
+
+                if (!isAdmin && user.UserId != tokenUserId)
+                    return Forbid();
+
+                var updateresult = await userService.UpdateUserAsync(user, isAdmin);
+
+                if (!updateresult)
+                {
+                    return BadRequest(new { Message = "Failed to update user data." });
+                }
+
+                return Ok(new { Message = "User data updated successfully." });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while updating user data.", Details = ex.Message });
+            }
         }
 
         [HttpGet]
