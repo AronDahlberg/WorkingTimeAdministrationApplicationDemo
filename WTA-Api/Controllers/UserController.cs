@@ -16,20 +16,6 @@ namespace WTA_Api.Controllers
         private readonly IUserService userService = userService;
 
         [HttpGet]
-        [Route("GetEmployee")]
-        public async Task<ActionResult<Employee>> GetEmployeeData(int employeeId)
-        {
-            throw new NotImplementedException();
-        }
-
-        [HttpPost]
-        [Route("UpdateEmployee")]
-        public async Task<ActionResult<Employee>> UpdateEmployeeData(Employee employee)
-        {
-            throw new NotImplementedException();
-        }
-
-        [HttpGet]
         [Route("GetUser")]
         public async Task<ActionResult<UserDto>> GetUserData(string userId)
         {
