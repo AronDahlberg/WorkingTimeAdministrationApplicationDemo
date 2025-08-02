@@ -33,7 +33,7 @@ namespace WTA_Api.Controllers
         [Route("GetUser")]
         public async Task<ActionResult<UserDto>> GetUserData(string userId)
         {
-            var tokenUserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            var tokenUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (tokenUserId == null)
                 return Unauthorized();
@@ -57,7 +57,7 @@ namespace WTA_Api.Controllers
         [Route("UpdateUser")]
         public async Task<IActionResult> UpdateUserData(UserDto user)
         {
-            var tokenUserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            var tokenUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (tokenUserId == null)
                 return Unauthorized();
