@@ -2,11 +2,18 @@
 
 namespace WTA_Api.Data
 {
-    public class WorkEntryRepository : IWorkEntryRepository
+    public class WorkEntryRepository(ApplicationDbContext context) : IWorkEntryRepository
     {
-        public Task AddWorkEntryAsync(WorkEntry workEntry)
+        private readonly ApplicationDbContext context = context;
+
+        public async Task AddWorkEntryAsync(WorkEntry workEntry)
         {
-            throw new NotImplementedException();
+            if (workEntry == null)
+            {
+                throw new ArgumentNullException(nameof(workEntry), "Work entry cannot be null.");
+            }
+            context.WorkEntries.Add(workEntry);
+            await context.SaveChangesAsync();
         }
 
         public Task DeleteWorkEntryAsync(int workEntryId)
