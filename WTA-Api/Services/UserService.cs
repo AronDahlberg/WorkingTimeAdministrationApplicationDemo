@@ -44,6 +44,39 @@ namespace WTA_Api.Services
             return dtos;
         }
 
+        public async Task<UserDto?> GetUserByIdAsync(string userId)
+        {
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+            }
+            var apiUser = await userManager.Users
+                .Include(u => u.Employee)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+            if (apiUser == null)
+            {
+                return null;
+            }
+            var userDto = new UserDto
+            {
+                UserId = apiUser.Id,
+                Email = apiUser.Email ?? throw new Exception("An account does not have an email in the database"),
+                EmployeeId = apiUser.Employee.EmployeeId,
+                FirstName = apiUser.Employee.FirstName,
+                LastName = apiUser.Employee.LastName,
+                SocialSecurityNumber = apiUser.Employee.SocialSecurityNumber,
+                PhoneNumber = apiUser.Employee.PhoneNumber,
+                EmergencyContactNumber = apiUser.Employee.EmergencyContactNumber,
+                Country = apiUser.Employee.Country,
+                City = apiUser.Employee.City,
+                Address = apiUser.Employee.Address,
+                PostalCode = apiUser.Employee.PostalCode,
+                HourlyWage = apiUser.Employee.HourlyWage
+            };
+            return userDto;
+        }
+
         public Task<bool> UpdateUserAsync(UserDto user, bool isAdmin)
         {
             if (user == null)

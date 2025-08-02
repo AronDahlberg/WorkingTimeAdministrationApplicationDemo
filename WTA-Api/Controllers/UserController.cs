@@ -33,7 +33,24 @@ namespace WTA_Api.Controllers
         [Route("GetUser")]
         public async Task<ActionResult<UserDto>> GetUserData(string userId)
         {
-            throw new NotImplementedException();
+            var tokenUserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+            if (tokenUserId == null)
+                return Unauthorized();
+
+            var isAdmin = User.IsInRole("Admin");
+
+            if (!isAdmin && userId != tokenUserId)
+                return Forbid();
+
+            var user = await userService.GetUserByIdAsync(userId);
+
+            if (user == null)
+            {
+                return NotFound(new { Message = "User not found." });
+            }
+
+            return Ok(user);
         }
 
         [HttpPost]
