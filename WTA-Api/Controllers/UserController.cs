@@ -2,14 +2,17 @@
 using Microsoft.AspNetCore.Mvc;
 using WTA_Api.DTOs;
 using WTA_Api.Models;
+using WTA_Api.Services;
 
 namespace WTA_Api.Controllers
 {
     [Route("[controller]")]
     [ApiController]
     [Authorize]
-    public class UserController : Controller
+    public class UserController(IUserService userService) : Controller
     {
+        private readonly IUserService userService = userService;
+
         [HttpGet]
         [Route("GetEmployee")]
         public async Task<ActionResult<Employee>> GetEmployeeData(int employeeId)
@@ -51,7 +54,16 @@ namespace WTA_Api.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<List<UserDto>>> GetAllUsers()
         {
-            throw new NotImplementedException();
+            try
+            {
+                var users = await userService.GetAllUsersAsync();
+
+                return Ok(users);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { Message = "An error occurred while retrieving users." });
+            }
         }
     }
 }
