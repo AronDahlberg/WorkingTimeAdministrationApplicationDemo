@@ -46,7 +46,6 @@ namespace WTA_Api.Data
                 throw new ArgumentException("Social Security Number cannot be null or empty.", nameof(socialSecurityNumber));
             }
             return await context.Employees
-                                .AsNoTracking()
                                 .FirstOrDefaultAsync(e => e.SocialSecurityNumber == socialSecurityNumber);
         }
 
