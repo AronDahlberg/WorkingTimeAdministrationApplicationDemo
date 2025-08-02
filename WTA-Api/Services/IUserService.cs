@@ -6,5 +6,6 @@ namespace WTA_Api.Services
     {
         Task<List<UserDto>> GetAllUsersAsync();
         Task<List<UserDto>> GetAllEmployeesAsync();
+        Task<bool> UpdateUserAsync(UserDto user, bool isAdmin);
     }
 }

@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using WTA_Api.DTOs;
 using WTA_Api.Models;
 using WTA_Api.Services;
+using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
 namespace WTA_Api.Controllers
 {
@@ -36,9 +38,26 @@ namespace WTA_Api.Controllers
 
         [HttpPost]
         [Route("UpdateUser")]
-        public async Task<ActionResult<UserDto>> UpdateUserData(UserDto user)
+        public async Task<IActionResult> UpdateUserData(UserDto user)
         {
-            throw new NotImplementedException();
+            var tokenUserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+            if (tokenUserId == null)
+                return Unauthorized();
+
+            var isAdmin = User.IsInRole("Admin");
+
+            if (!isAdmin && user.UserId != tokenUserId)
+                return Forbid();
+
+            var updateresult = await userService.UpdateUserAsync(user, isAdmin);
+
+            if (!updateresult)
+            {
+                return BadRequest(new { Message = "Failed to update user data." });
+            }
+
+            return Ok(new { Message = "User data updated successfully." });
         }
 
         [HttpGet]

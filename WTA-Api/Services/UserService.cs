@@ -43,5 +43,36 @@ namespace WTA_Api.Services
 
             return dtos;
         }
+
+        public Task<bool> UpdateUserAsync(UserDto user, bool isAdmin)
+        {
+            if (user == null)
+            {
+                throw new ArgumentNullException(nameof(user), "User cannot be null.");
+            }
+
+            var apiUser = userManager.Users.FirstOrDefault(u => u.Id == user.UserId) ?? throw new KeyNotFoundException($"User with ID {user.UserId} not found.");
+
+            if (!isAdmin && apiUser.Employee.HourlyWage != user.HourlyWage)
+            {
+                throw new UnauthorizedAccessException("Only admins can change the hourly wage.");
+            }
+
+            apiUser.Email = user.Email;
+            apiUser.Employee.FirstName = user.FirstName;
+            apiUser.Employee.LastName = user.LastName;
+            apiUser.Employee.SocialSecurityNumber = user.SocialSecurityNumber;
+            apiUser.Employee.PhoneNumber = user.PhoneNumber;
+            apiUser.Employee.EmergencyContactNumber = user.EmergencyContactNumber;
+            apiUser.Employee.Country = user.Country;
+            apiUser.Employee.City = user.City;
+            apiUser.Employee.Address = user.Address;
+            apiUser.Employee.PostalCode = user.PostalCode;
+            apiUser.Employee.HourlyWage = user.HourlyWage;
+
+            var result = userManager.UpdateAsync(apiUser).Result;
+
+            return Task.FromResult(result.Succeeded);
+        }
     }
 }
