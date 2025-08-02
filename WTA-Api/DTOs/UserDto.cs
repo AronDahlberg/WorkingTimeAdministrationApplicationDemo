@@ -6,10 +6,8 @@ namespace WTA_Api.DTOs
 {
     public class UserDto
     {
-        [Required]
         public string UserId { get; set; } = string.Empty;
 
-        [Required]
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
 

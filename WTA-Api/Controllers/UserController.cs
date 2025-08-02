@@ -44,9 +44,17 @@ namespace WTA_Api.Controllers
         [HttpGet]
         [Route("GetAllEmployees")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<List<Employee>>> GetAllEmpoyees()
+        public async Task<ActionResult<List<UserDto>>> GetAllEmployees()
         {
-            throw new NotImplementedException();
+            try
+            {
+                var employees = await userService.GetAllEmployeesAsync();
+                return Ok(employees);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { Message = "An error occurred while retrieving employees." });
+            }
         }
 
         [HttpGet]

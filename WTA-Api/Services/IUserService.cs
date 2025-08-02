@@ -5,5 +5,6 @@ namespace WTA_Api.Services
     public interface IUserService
     {
         Task<List<UserDto>> GetAllUsersAsync();
+        Task<List<UserDto>> GetAllEmployeesAsync();
     }
 }

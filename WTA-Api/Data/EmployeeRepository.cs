@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using WTA_Api.DTOs;
 using WTA_Api.Models;
 
 namespace WTA_Api.Data
@@ -58,6 +59,34 @@ namespace WTA_Api.Data
             }
             context.Employees.Update(employee);
             await context.SaveChangesAsync();
+        }
+
+        public async Task<List<UserDto>> GetAllEmployeesWithUsersAsync()
+        {
+            return await (
+                from e in context.Employees
+                join u in context.Users
+                  on e.EmployeeId equals u.EmployeeId into usersGroup
+                from u in usersGroup.DefaultIfEmpty()
+                select new UserDto
+                {
+                    EmployeeId = e.EmployeeId,
+                    FirstName = e.FirstName,
+                    LastName = e.LastName,
+                    SocialSecurityNumber = e.SocialSecurityNumber,
+                    PhoneNumber = e.PhoneNumber,
+                    EmergencyContactNumber = e.EmergencyContactNumber,
+                    Country = e.Country,
+                    City = e.City,
+                    Address = e.Address,
+                    PostalCode = e.PostalCode,
+                    HourlyWage = e.HourlyWage,
+
+                    // if there’s no user, default to empty string
+                    UserId = u != null ? u.Id : string.Empty,
+                    Email = u != null ? (u.Email ?? string.Empty) : string.Empty
+                }
+            ).ToListAsync();
         }
     }
 }

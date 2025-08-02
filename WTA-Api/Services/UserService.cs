@@ -11,6 +11,11 @@ namespace WTA_Api.Services
         private readonly IEmployeeRepository employeeRepository = employeeRepository;
         private readonly UserManager<ApiUser> userManager = userManager;
 
+        public Task<List<UserDto>> GetAllEmployeesAsync()
+        {
+            return employeeRepository.GetAllEmployeesWithUsersAsync();
+        }
+
         public async Task<List<UserDto>> GetAllUsersAsync()
         {
             var users = await userManager.Users
