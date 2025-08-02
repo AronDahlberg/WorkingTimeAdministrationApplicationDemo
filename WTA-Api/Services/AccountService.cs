@@ -110,9 +110,9 @@ namespace WTA_Api.Services
 
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email ?? throw new Exception("Account has no email, cannot generate token")),
                 new Claim("EmployeeId", user.EmployeeId.ToString())
             }
             .Union(roleClaims)
