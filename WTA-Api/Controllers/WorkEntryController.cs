@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using WTA_Api.DTOs;
 using WTA_Api.Models;
 using WTA_Api.Services;
 
@@ -15,7 +16,7 @@ namespace WTA_Api.Controllers
 
         [HttpPost]
         [Route("RegisterWorkEntry")]
-        public async Task<IActionResult> AddWorkEntry(WorkEntry entry)
+        public async Task<IActionResult> AddWorkEntry(WorkEntryDto entry)
         {
             if (entry == null)
             {

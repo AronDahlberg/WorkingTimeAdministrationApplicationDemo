@@ -1,4 +1,5 @@
 ﻿using WTA_Api.Data;
+using WTA_Api.DTOs;
 using WTA_Api.Models;
 
 namespace WTA_Api.Services
@@ -7,13 +8,22 @@ namespace WTA_Api.Services
     {
         private readonly IWorkEntryRepository workEntryRepository = workEntryRepository;
 
-        public async Task AddWorkEntryAsync(WorkEntry entry)
+        public async Task AddWorkEntryAsync(WorkEntryDto entry)
         {
             if (entry == null)
             {
                 throw new ArgumentNullException(nameof(entry), "Work entry cannot be null.");
             }
-            await workEntryRepository.AddWorkEntryAsync(entry);
+
+            var workEntry = new WorkEntry
+            {
+                EmployeeId = entry.EmployeeId,
+                StartDateTime = entry.StartDateTime,
+                Duration = entry.Duration,
+                TotalWage = entry.TotalWage
+            };
+
+            await workEntryRepository.AddWorkEntryAsync(workEntry);
         }
     }
 }
