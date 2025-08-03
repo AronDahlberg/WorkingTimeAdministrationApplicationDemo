@@ -53,9 +53,27 @@ namespace WTA_Api.Controllers
         [HttpPost]
         [Route("DeleteWorkEntry")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<WorkEntry>> DeleteWorkEntry(int entryId)
+        public async Task<IActionResult> DeleteWorkEntry(int entryId)
         {
-            throw new NotImplementedException();
+            if (entryId <= 0)
+            {
+                return BadRequest(new { Message = "Invalid work entry ID." });
+            }
+            try
+            {
+                await workEntryService.DeleteWorkEntryAsync(entryId);
+
+                return Ok();
+            }
+            catch (KeyNotFoundException knfEx)
+            {
+                return NotFound(new { Message = knfEx.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while deleting the work entry.", Details = ex.Message });
+            }
+
         }
 
         [HttpPost]

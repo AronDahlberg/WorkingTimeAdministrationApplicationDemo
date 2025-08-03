@@ -25,5 +25,15 @@ namespace WTA_Api.Services
 
             await workEntryRepository.AddWorkEntryAsync(workEntry);
         }
+
+        public async Task DeleteWorkEntryAsync(int entryId)
+        {
+            if (entryId <= 0)
+            {
+                throw new ArgumentException("Invalid work entry ID.", nameof(entryId));
+            }
+
+            await workEntryRepository.DeleteWorkEntryAsync(entryId);
+        }
     }
 }

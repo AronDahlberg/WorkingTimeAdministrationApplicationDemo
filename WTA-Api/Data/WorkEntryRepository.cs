@@ -16,9 +16,19 @@ namespace WTA_Api.Data
             await context.SaveChangesAsync();
         }
 
-        public Task DeleteWorkEntryAsync(int workEntryId)
+        public async Task DeleteWorkEntryAsync(int workEntryId)
         {
-            throw new NotImplementedException();
+            if (workEntryId <= 0)
+            {
+                throw new ArgumentException("Invalid work entry ID.", nameof(workEntryId));
+            }
+            var workEntry = context.WorkEntries.Find(workEntryId);
+            if (workEntry == null)
+            {
+                throw new KeyNotFoundException($"Work entry with ID {workEntryId} not found.");
+            }
+            context.WorkEntries.Remove(workEntry);
+            await context.SaveChangesAsync();
         }
 
         public Task<List<WorkEntry>> GetWorkEntriesByEmployeeIdAsync(int employeeId)
