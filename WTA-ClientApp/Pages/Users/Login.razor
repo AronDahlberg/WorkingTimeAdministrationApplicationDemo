@@ -1,0 +1,49 @@
+﻿@page "/users/login"
+@using WTA_ClientApp.Services.Authentication
+@using WTA_ClientApp.Services.Base
+@inject IAuthenticationService authenticationService
+@inject NavigationManager NavigationManager
+<h3>Login</h3>
+
+<div>
+    <EditForm Model="LoginModel" OnValidSubmit="HandleLogin">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="form-group">
+            <label for="email" class="form-label">Email</label>
+            <InputText id="email" type="email" autocomplete="email" class="form-control" @bind-Value="LoginModel.Email" />
+            <ValidationMessage For="@(() => LoginModel.Email)" />
+        </div>
+        <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <InputText id="password" type="password" autocomplete="current-password" class="form-control" @bind-Value="LoginModel.Password" />
+            <ValidationMessage For="@(() => LoginModel.Password)" />
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Login</button>
+    </EditForm>
+</div>
+
+@code {
+    UserLoginDto LoginModel = new UserLoginDto();
+
+    public async Task HandleLogin()
+    {
+        string message = string.Empty;
+        try
+        {
+            var response = await authenticationService.AuthenticateAsync(LoginModel);
+            if (response)
+            {
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                message = "Invalid credentials";
+            }
+        }
+        catch (ApiException aex)
+        {
+            message = aex.Response;
+        }
+    }
+}
