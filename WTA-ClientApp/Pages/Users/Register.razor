@@ -1,0 +1,98 @@
+﻿@page "/users/register"
+@using WTA_ClientApp.Services.Base
+@inject IClient httpClient
+@inject NavigationManager NavigationManager
+
+<h3>Register</h3>
+
+@if(string.IsNullOrEmpty(message) == false)
+{
+    <div class="alert alert-danger">
+        <p>
+            @message
+        </p>
+    </div>
+}
+
+<div>
+    <EditForm Model="@RegistrationModel" OnValidSubmit="HandleRegistration">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="form-group">
+            <label for="email" class="form-label">Email</label>
+            <InputText id="email" type="email" autocomplete="email" class="form-control" @bind-Value="RegistrationModel.Email" />
+            <ValidationMessage For="@(() => RegistrationModel.Email)" />
+        </div>
+        <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <InputText id="password" type="password" autocomplete="new-password" class="form-control" @bind-Value="RegistrationModel.Password" />
+            <ValidationMessage For="@(() => RegistrationModel.Password)" />
+        </div>
+        <div class="form-group">
+            <label for="firstName" class="form-label">First Name</label>
+            <InputText id="firstName" type="text" autocomplete="given-name" class="form-control" @bind-Value="RegistrationModel.FirstName" />
+            <ValidationMessage For="@(() => RegistrationModel.FirstName)" />
+        </div>
+        <div class="form-group">
+            <label for="lastName" class="form-label">Last Name</label>
+            <InputText id="lastName" type="text" autocomplete="family-name" class="form-control" @bind-Value="RegistrationModel.LastName" />
+            <ValidationMessage For="@(() => RegistrationModel.LastName)" />
+        </div>
+        <div class="form-group">
+            <label for="ssn" class="form-label">SSN</label>
+            <InputText id="ssn" type="text" autocomplete="off" class="form-control" @bind-Value="RegistrationModel.SocialSecurityNumber" />
+            <ValidationMessage For="@(() => RegistrationModel.SocialSecurityNumber)" />
+        </div>
+        <div class="form-group">
+            <label for="phoneNumer" class="form-label">Phone Number</label>
+            <InputText id="phoneNumber" type="tel" autocomplete="tel" class="form-control" @bind-Value="RegistrationModel.PhoneNumber" />
+            <ValidationMessage For="@(() => RegistrationModel.PhoneNumber)" />
+        </div>
+        <div class="form-group">
+            <label for="emergencyContactPhoneNumer" class="form-label">Emergency Contact Phone Number</label>
+            <InputText id="emergencyContactPhoneNumber" type="tel" autocomplete="off" class="form-control" @bind-Value="RegistrationModel.EmergencyContactNumber" />
+            <ValidationMessage For="@(() => RegistrationModel.EmergencyContactNumber)" />
+        </div>
+        <div class="form-group">
+            <label for="country" class="form-label">Country</label>
+            <InputText id="country" type="text" autocomplete="country-name" class="form-control" @bind-Value="RegistrationModel.Country" />
+            <ValidationMessage For="@(() => RegistrationModel.Country)" />
+        </div>
+        <div class="form-group">
+            <label for="city" class="form-label">City</label>
+            <InputText id="city" type="text" autocomplete="address-level2" class="form-control" @bind-Value="RegistrationModel.City" />
+            <ValidationMessage For="@(() => RegistrationModel.City)" />
+        </div>
+        <div class="form-group">
+            <label for="address" class="form-label">Street Address</label>
+            <InputText id="address" type="text" autocomplete="street-address" class="form-control" @bind-Value="RegistrationModel.Address" />
+            <ValidationMessage For="@(() => RegistrationModel.Address)" />
+        </div>
+        <div class="form-group">
+            <label for="postalCode" class="form-label">Postal Code</label>
+            <InputText id="postalCode" type="text" autocomplete="postal-code" class="form-control" @bind-Value="RegistrationModel.PostalCode" />
+            <ValidationMessage For="@(() => RegistrationModel.PostalCode)" />
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Register</button>
+    </EditForm>
+</div>
+
+@code {
+    UserRegistrationDto RegistrationModel = new UserRegistrationDto();
+    string message = string.Empty;
+
+    private async Task HandleRegistration()
+    {
+        Console.WriteLine("HandleRegistration invoked");
+
+        try
+        {
+            await httpClient.RegisterAsync(RegistrationModel);
+            NavigationManager.NavigateTo("/users/login");
+        }
+        catch (ApiException aex)
+        {
+            message = aex.Response;
+        }
+    }
+}
