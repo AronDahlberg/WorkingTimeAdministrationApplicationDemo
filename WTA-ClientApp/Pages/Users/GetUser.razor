@@ -1,0 +1,60 @@
+﻿@page "/users/get"
+@using WTA_ClientApp.Data
+@using WTA_ClientApp.Services
+@using WTA_ClientApp.Services.Base
+@inject NavigationManager NavigationManager
+@inject IUserService userService
+<h3>Get User Info</h3>
+
+@if (string.IsNullOrEmpty(message) == false)
+{
+    <div class="alert alert-danger">
+        <p>
+            @message
+        </p>
+    </div>
+}
+
+<div>
+    <EditForm Model="@GetUserModel" OnValidSubmit="HandleGetUser">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="form-group">
+            <label for="userId" class="form-label">User ID</label>
+            <InputText id="userId" type="text" class="form-control" @bind-Value="GetUserModel.UserId" />
+            <ValidationMessage For="@(() => GetUserModel.UserId)" />
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Get User</button>
+    </EditForm>
+</div>
+
+@if (fetchedUser != null)
+{
+    <div class="mt-3">
+        <h4>User Details</h4>
+        <p><strong>ID:</strong> @fetchedUser.UserId</p>
+        <p><strong>Email:</strong> @fetchedUser.Email</p>
+        <p><strong>First Name:</strong> @fetchedUser.FirstName</p>
+        <p><strong>Last Name:</strong> @fetchedUser.LastName</p>
+        <p><strong>SSN:</strong> @fetchedUser.SocialSecurityNumber</p>
+        <p><strong>Phone Number:</strong> @fetchedUser.PhoneNumber</p>
+        <p><strong>Emergency Contact Number:</strong> @fetchedUser.EmergencyContactNumber</p>
+        <p><strong>Country:</strong> @fetchedUser.Country</p>
+        <p><strong>City:</strong> @fetchedUser.City</p>
+        <p><strong>Address:</strong> @fetchedUser.Address</p>
+        <p><strong>Postal Code:</strong> @fetchedUser.PostalCode</p>
+        <p><strong>Hourly Wage:</strong> @fetchedUser.HourlyWage</p>
+    </div>
+}
+
+@code {
+    string message = string.Empty;
+    GetUserViewModel GetUserModel = new();
+
+    UserDto? fetchedUser = null;
+
+    private async Task HandleGetUser()
+    {
+        fetchedUser = await userService.GetUserByIdAsync(GetUserModel.UserId);
+    }
+}

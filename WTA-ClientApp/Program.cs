@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using WTA_ClientApp.Providers;
+using WTA_ClientApp.Services;
 using WTA_ClientApp.Services.Authentication;
 using WTA_ClientApp.Services.Base;
 
@@ -29,6 +30,7 @@ public class Program
         builder.Services.AddScoped<IClient, Client>();
 
         builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+        builder.Services.AddScoped<IUserService, UserService>();
 
         await builder.Build().RunAsync();
     }
