@@ -86,6 +86,11 @@ namespace WTA_Api.Services
             }
             var result = await userManager.CheckPasswordAsync(user, userLoginDto.Password);
 
+            if (!result)
+            {
+                return null;
+            }
+
             var tokenString = await GenerateToken(user);
 
             var response = new AuthResponse
