@@ -1,0 +1,12 @@
+﻿@page "/users/logout"
+@using WTA_ClientApp.Services.Authentication
+@inject NavigationManager NavigationManager
+@inject IAuthenticationService authService
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await authService.Logout();
+        NavigationManager.NavigateTo("/");
+    }
+}
