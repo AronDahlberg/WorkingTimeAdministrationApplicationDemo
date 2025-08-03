@@ -15,6 +15,14 @@ namespace WTA_Api.Controllers
     {
         private readonly IUserService userService = userService;
 
+        /// <summary>
+        /// Retrieves user data for the specified user ID.
+        /// Admin users can retrieve any user's data, while non-admin users can only retrieve their own data.
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns>
+        /// Returns the user data as a UserDto if found, or an Unauthorized response if the user is not authorized to access the data.
+        /// </returns>
         [HttpGet]
         [Route("GetUser")]
         public async Task<ActionResult<UserDto>> GetUserData(string userId)
@@ -39,6 +47,12 @@ namespace WTA_Api.Controllers
             return Ok(user);
         }
 
+        /// <summary>
+        /// Updates user data for the specified user.
+        /// Admin users can update any user's data, while non-admin users can only update their own data.
+        /// </summary>
+        /// <param name="user"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("UpdateUser")]
         public async Task<IActionResult> UpdateUserData(UserDto user)
@@ -74,6 +88,12 @@ namespace WTA_Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Retrieves a list of all employees in the system.
+        /// Only accessible by admin users.
+        /// Will include all employees, even those without a user account.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [Route("GetAllEmployees")]
         [Authorize(Roles = "Admin")]
@@ -90,6 +110,12 @@ namespace WTA_Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Retrieves a list of all users in the system.
+        /// Only accessible by admin users.
+        /// Will not include any user-less employees (e.g., those without a user account).
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [Route("GetAllUsers")]
         [Authorize(Roles = "Admin")]

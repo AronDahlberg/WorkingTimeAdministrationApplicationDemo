@@ -14,6 +14,12 @@ namespace WTA_Api.Controllers
     {
         private readonly IWorkEntryService workEntryService = workEntryService;
 
+        /// <summary>
+        /// Registers a new work entry for an employee.
+        /// Admin users can register work entries for any employee, while non-admin users can only register their own work entries.
+        /// </summary>
+        /// <param name="entry"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("RegisterWorkEntry")]
         public async Task<IActionResult> AddWorkEntry(AddWorkEntryDto entry)
@@ -50,6 +56,12 @@ namespace WTA_Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Deletes a work entry by its ID.
+        /// Only accessible by admin users.
+        /// </summary>
+        /// <param name="entryId"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("DeleteWorkEntry")]
         [Authorize(Roles = "Admin")]
@@ -76,6 +88,12 @@ namespace WTA_Api.Controllers
 
         }
 
+        /// <summary>
+        /// Updates an existing work entry.
+        /// Only accessible by admin users.
+        /// </summary>
+        /// <param name="entry"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("UpdateWorkEntry")]
         [Authorize(Roles = "Admin")]
@@ -101,6 +119,14 @@ namespace WTA_Api.Controllers
 
         }
 
+        /// <summary>
+        /// Retrieves all work entries for a specific employee.
+        /// Admin users can retrieve work entries for any employee, while non-admin users can only retrieve their own work entries.
+        /// </summary>
+        /// <param name="employeeId"></param>
+        /// <returns>
+        /// Returns a list of work entries for the specified employee if successful, or an error response if the employee ID is invalid or if an error occurs.
+        /// </returns>
         [HttpGet]
         [Route("GetWorkEntries")]
         public async Task<ActionResult<List<WorkEntryDto>>> GetWorkEntries(int employeeId)

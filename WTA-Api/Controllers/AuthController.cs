@@ -12,6 +12,11 @@ namespace WTA_Api.Controllers
     {
         private readonly IAccountService accountService = accountService;
 
+        /// <summary>
+        /// Registers a new user with the provided registration details.
+        /// </summary>
+        /// <param name="userRegistrationDto"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("register")]
         public async Task<IActionResult> Register(UserRegistrationDto userRegistrationDto)
@@ -28,6 +33,13 @@ namespace WTA_Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Logs in a user with the provided login credentials and returns an authentication response.
+        /// </summary>
+        /// <param name="userLoginDto"></param>
+        /// <returns>
+        /// Returns an AuthResponse containing the user's authentication token and other details if successful, or an Unauthorized response if login fails.
+        /// </returns>
         [HttpPost]
         [Route("login")]
         public async Task<ActionResult<AuthResponse>> Login(UserLoginDto userLoginDto)
