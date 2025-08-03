@@ -8,7 +8,7 @@ namespace WTA_Api.Services
     {
         private readonly IWorkEntryRepository workEntryRepository = workEntryRepository;
 
-        public async Task AddWorkEntryAsync(WorkEntryDto entry)
+        public async Task AddWorkEntryAsync(AddWorkEntryDto entry)
         {
             if (entry == null)
             {
@@ -34,6 +34,28 @@ namespace WTA_Api.Services
             }
 
             await workEntryRepository.DeleteWorkEntryAsync(entryId);
+        }
+
+        public async Task UpdateWorkEntryAsync(WorkEntryDto entry)
+        {
+            if (entry == null)
+            {
+                throw new ArgumentNullException(nameof(entry), "Work entry cannot be null.");
+            }
+            if (entry.WorkEntryId <= 0)
+            {
+                throw new ArgumentException("Invalid work entry ID.", nameof(entry.WorkEntryId));
+            }
+
+            WorkEntry workEntry = await workEntryRepository.GetWorkEntryByIdAsync(entry.WorkEntryId)
+                                    ?? throw new KeyNotFoundException($"Work entry with ID {entry.WorkEntryId} not found.");
+
+            workEntry.StartDateTime = entry.StartDateTime;
+            workEntry.Duration = entry.Duration;
+            workEntry.TotalWage = entry.TotalWage;
+            workEntry.EmployeeId = entry.EmployeeId;
+
+            await workEntryRepository.UpdateWorkEntryAsync(workEntry);
         }
     }
 }

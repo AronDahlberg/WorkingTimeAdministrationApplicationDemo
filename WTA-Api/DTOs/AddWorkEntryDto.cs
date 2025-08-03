@@ -3,11 +3,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace WTA_Api.DTOs
 {
-    public class WorkEntryDto
+    public class AddWorkEntryDto
     {
-        [Required]
-        public int WorkEntryId { get; set; }
-
         [Required]
         public DateTime StartDateTime { get; set; }
 

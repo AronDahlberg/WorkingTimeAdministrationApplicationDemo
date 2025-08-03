@@ -16,7 +16,7 @@ namespace WTA_Api.Controllers
 
         [HttpPost]
         [Route("RegisterWorkEntry")]
-        public async Task<IActionResult> AddWorkEntry(WorkEntryDto entry)
+        public async Task<IActionResult> AddWorkEntry(AddWorkEntryDto entry)
         {
             if (entry == null)
             {
@@ -67,7 +67,7 @@ namespace WTA_Api.Controllers
             }
             catch (KeyNotFoundException knfEx)
             {
-                return NotFound(new { Message = knfEx.Message });
+                return NotFound(new { knfEx.Message });
             }
             catch (Exception ex)
             {
@@ -79,9 +79,26 @@ namespace WTA_Api.Controllers
         [HttpPost]
         [Route("UpdateWorkEntry")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<WorkEntry>> UpdateWorkEntry(WorkEntry entry)
+        public async Task<IActionResult> UpdateWorkEntry(WorkEntryDto entry)
         {
-            throw new NotImplementedException();
+            if (entry == null || entry.WorkEntryId <= 0)
+            {
+                return BadRequest(new { Message = "Invalid work entry data." });
+            }
+            try
+            {
+                await workEntryService.UpdateWorkEntryAsync(entry);
+                return Ok(new { Message = "Work entry updated successfully." });
+            }
+            catch (KeyNotFoundException knfEx)
+            {
+                return NotFound(new { knfEx.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while updating the work entry.", Details = ex.Message });
+            }
+
         }
 
         [HttpGet]

@@ -1,4 +1,5 @@
-﻿using WTA_Api.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using WTA_Api.Models;
 
 namespace WTA_Api.Data
 {
@@ -31,19 +32,49 @@ namespace WTA_Api.Data
             await context.SaveChangesAsync();
         }
 
-        public Task<List<WorkEntry>> GetWorkEntriesByEmployeeIdAsync(int employeeId)
+        public async Task<List<WorkEntry>> GetWorkEntriesByEmployeeIdAsync(int employeeId)
         {
-            throw new NotImplementedException();
+            if (employeeId <= 0)
+            {
+                throw new ArgumentException("Invalid employee ID.", nameof(employeeId));
+            }
+
+            return await context.WorkEntries
+                .Where(we => we.EmployeeId == employeeId)
+                .ToListAsync();
         }
 
-        public Task<WorkEntry?> GetWorkEntryByIdAsync(int workEntryId)
+        public async Task<WorkEntry?> GetWorkEntryByIdAsync(int workEntryId)
         {
-            throw new NotImplementedException();
+            if (workEntryId <= 0)
+            {
+                throw new ArgumentException("Invalid work entry ID.", nameof(workEntryId));
+            }
+            return await context.WorkEntries
+                .Include(we => we.Employee)
+                .FirstOrDefaultAsync(we => we.WorkEntryId == workEntryId);
         }
 
-        public Task UpdateWorkEntryAsync(WorkEntry workEntry)
+        public async Task UpdateWorkEntryAsync(WorkEntry workEntry)
         {
-            throw new NotImplementedException();
+            if (workEntry == null)
+            {
+                throw new ArgumentNullException(nameof(workEntry), "Work entry cannot be null.");
+            }
+            if (workEntry.WorkEntryId <= 0)
+            {
+                throw new ArgumentException("Invalid work entry ID.", nameof(workEntry.WorkEntryId));
+            }
+
+            var existingWorkEntry = await context.WorkEntries.FindAsync(workEntry.WorkEntryId) ?? throw new KeyNotFoundException($"Work entry with ID {workEntry.WorkEntryId} not found.");
+            
+            existingWorkEntry.StartDateTime = workEntry.StartDateTime;
+            existingWorkEntry.Duration = workEntry.Duration;
+            existingWorkEntry.TotalWage = workEntry.TotalWage;
+            existingWorkEntry.EmployeeId = workEntry.EmployeeId;
+
+            context.WorkEntries.Update(existingWorkEntry);
+            await context.SaveChangesAsync();
         }
     }
 }

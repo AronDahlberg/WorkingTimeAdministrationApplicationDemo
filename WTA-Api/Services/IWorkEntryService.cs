@@ -5,7 +5,8 @@ namespace WTA_Api.Services
 {
     public interface IWorkEntryService
     {
-        Task AddWorkEntryAsync(WorkEntryDto entry);
+        Task AddWorkEntryAsync(AddWorkEntryDto entry);
         Task DeleteWorkEntryAsync(int entryId);
+        Task UpdateWorkEntryAsync(WorkEntryDto entry);
     }
 }
