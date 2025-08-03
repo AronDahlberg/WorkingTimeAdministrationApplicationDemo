@@ -36,6 +36,23 @@ namespace WTA_Api.Services
             await workEntryRepository.DeleteWorkEntryAsync(entryId);
         }
 
+        public async Task<List<WorkEntryDto>> GetWorkEntriesByEmployeeIdAsync(int employeeId)
+        {
+            if (employeeId <= 0)
+            {
+                throw new ArgumentException("Invalid employee ID.", nameof(employeeId));
+            }
+            var workEntries = await workEntryRepository.GetWorkEntriesByEmployeeIdAsync(employeeId);
+            return [.. workEntries.Select(we => new WorkEntryDto
+            {
+                WorkEntryId = we.WorkEntryId,
+                EmployeeId = we.EmployeeId,
+                StartDateTime = we.StartDateTime,
+                Duration = we.Duration,
+                TotalWage = we.TotalWage
+            })];
+        }
+
         public async Task UpdateWorkEntryAsync(WorkEntryDto entry)
         {
             if (entry == null)

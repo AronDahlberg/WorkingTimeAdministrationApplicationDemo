@@ -103,9 +103,42 @@ namespace WTA_Api.Controllers
 
         [HttpGet]
         [Route("GetWorkEntries")]
-        public async Task<ActionResult<List<WorkEntry>>> GetWorkEntries(int employeeId)
+        public async Task<ActionResult<List<WorkEntryDto>>> GetWorkEntries(int employeeId)
         {
-            throw new NotImplementedException();
+            if (employeeId <= 0)
+            {
+                return BadRequest(new { Message = "Invalid employee ID." });
+            }
+            try
+            {
+                var tokenUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (tokenUserId == null)
+                    return Unauthorized();
+
+                var isAdmin = User.IsInRole("Admin");
+
+                if (!isAdmin)
+                {
+                    var RetrevingEmployeeId = User.FindFirstValue("EmployeeId");
+                    if (RetrevingEmployeeId == null || RetrevingEmployeeId != employeeId.ToString())
+                    {
+                        return Forbid();
+                    }
+                }
+
+                var workEntries = await workEntryService.GetWorkEntriesByEmployeeIdAsync(employeeId);
+
+                return Ok(workEntries);
+            }
+            catch (KeyNotFoundException knfEx)
+            {
+                return NotFound(new { knfEx.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while retrieving work entries.", Details = ex.Message });
+            }
         }
     }
 }

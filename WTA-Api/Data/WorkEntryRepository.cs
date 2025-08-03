@@ -39,6 +39,11 @@ namespace WTA_Api.Data
                 throw new ArgumentException("Invalid employee ID.", nameof(employeeId));
             }
 
+            if(!await context.Employees.AnyAsync(e => e.EmployeeId == employeeId))
+            {
+                throw new KeyNotFoundException($"Employee with ID {employeeId} not found.");
+            }
+
             return await context.WorkEntries
                 .Where(we => we.EmployeeId == employeeId)
                 .ToListAsync();
