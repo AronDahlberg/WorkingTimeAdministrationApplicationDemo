@@ -1,4 +1,8 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using System.Security.Claims
+@using WTA_ClientApp.Providers
+@inject ApiAuthenticationStateProvider AuthStateProvider
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">WTA-ClientApp</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
@@ -16,6 +20,11 @@
         </div>
         <Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
             <Authorized>
+                @{
+                    var user = context.User;
+                    var id = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                    ?? user.FindFirst("sub")?.Value;
+                }
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="counter">
                         <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
@@ -27,8 +36,9 @@
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="users/get">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Get User Info
+                    <NavLink class="nav-link" href="@($"/users/profile/{id}")">
+                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span>
+                        Profile
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">

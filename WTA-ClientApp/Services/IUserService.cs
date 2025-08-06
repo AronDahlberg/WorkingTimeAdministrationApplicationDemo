@@ -1,9 +1,10 @@
-﻿using WTA_ClientApp.Services.Base;
+﻿using WTA_ClientApp.Common;
+using WTA_ClientApp.Services.Base;
 
 namespace WTA_ClientApp.Services
 {
     public interface IUserService
     {
-        Task<UserDto?> GetUserByIdAsync(string userId);
+        Task<ServiceResult<UserDto>> GetUserByIdAsync(string userId);
     }
 }
