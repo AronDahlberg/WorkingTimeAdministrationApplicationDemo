@@ -4,9 +4,10 @@ using WTA_Api.Models;
 
 namespace WTA_Api.Services
 {
-    public class WorkEntryService(IWorkEntryRepository workEntryRepository) : IWorkEntryService
+    public class WorkEntryService(IWorkEntryRepository workEntryRepository, IEmployeeRepository employeeRepository) : IWorkEntryService
     {
         private readonly IWorkEntryRepository workEntryRepository = workEntryRepository;
+        private readonly IEmployeeRepository employeeRepository = employeeRepository;
 
         public async Task AddWorkEntryAsync(AddWorkEntryDto entry)
         {
@@ -15,12 +16,16 @@ namespace WTA_Api.Services
                 throw new ArgumentNullException(nameof(entry), "Work entry cannot be null.");
             }
 
+            var employee = await employeeRepository.GetEmployeeByIdAsync(entry.EmployeeId) ?? throw new KeyNotFoundException("Could not find employee to add work entry to.");
+
+            decimal totalWage = decimal.Round(employee.HourlyWage * ((decimal)Math.Ceiling(entry.Duration.TotalMinutes / 5.0) * 5m / 60m), 2, MidpointRounding.AwayFromZero);
+
             var workEntry = new WorkEntry
             {
                 EmployeeId = entry.EmployeeId,
                 StartDateTime = entry.StartDateTime,
                 Duration = entry.Duration,
-                TotalWage = entry.TotalWage
+                TotalWage = totalWage
             };
 
             await workEntryRepository.AddWorkEntryAsync(workEntry);

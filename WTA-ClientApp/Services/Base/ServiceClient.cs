@@ -1084,10 +1084,6 @@ namespace WTA_ClientApp.Services.Base
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Duration { get; set; }
 
-        [Newtonsoft.Json.JsonProperty("totalWage", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        [System.ComponentModel.DataAnnotations.Range(0D, 24000D)]
-        public double TotalWage { get; set; }
-
         [Newtonsoft.Json.JsonProperty("employeeId", Required = Newtonsoft.Json.Required.Always)]
         public int EmployeeId { get; set; }
 
