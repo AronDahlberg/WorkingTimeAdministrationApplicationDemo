@@ -31,6 +31,7 @@ public class Program
 
         builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
         builder.Services.AddScoped<IUserService, UserService>();
+        builder.Services.AddScoped<IWorkTimeService, WorkTimeService>();
 
         await builder.Build().RunAsync();
     }

@@ -1,10 +1,12 @@
 ﻿@page "/admin/users"
 @attribute [Authorize(Roles = "Admin")]
 @using Microsoft.AspNetCore.Authorization
+@using System.Globalization
 @using WTA_ClientApp.Common
 @using WTA_ClientApp.Services
 @using WTA_ClientApp.Services.Base
 @inject IUserService UserService
+@inject IWorkTimeService WorkTimeService
 
 <h3>All Users</h3>
 
@@ -12,16 +14,171 @@
     private ServiceResult<ICollection<UserDto>>? _result;
     private bool _isLoading = true;
 
+    // Per-employee UI state keyed by EmployeeId
+    private Dictionary<int, RowState> _rowStates = new();
+
+    // Duration dropdown options (hh:mm)
+    private List<string> _durationOptions = new();
+
     protected override async Task OnInitializedAsync()
     {
+        BuildDurationOptions(); // generate hh:mm in 5min steps
+
         try
         {
             _result = await UserService.GetAllUsersAsync();
+            if (_result?.IsSuccess == true)
+            {
+                // initialize per-row state
+                foreach (var u in _result.Data!)
+                {
+                    // if EmployeeId missing or zero, skip or set a default
+                    var empId = u.EmployeeId;
+                    if (!_rowStates.ContainsKey(empId))
+                    {
+                        _rowStates[empId] = new RowState
+                            {
+                            // datetime-local requires yyyy-MM-ddTHH:mm format
+                                StartLocal = DateTime.Now.ToString("yyyy-MM-dd'T'HH:mm"),
+                                SelectedDuration = "08:00" // default duration (change if you like)
+                            };
+                    }
+                }
+            }
         }
         finally
         {
             _isLoading = false;
         }
+    }
+
+    // Build duration list from 00:05 to 23:55 in 5-minute steps
+    private void BuildDurationOptions()
+    {
+        _durationOptions.Clear();
+        var first = TimeSpan.FromMinutes(5);
+        var last = TimeSpan.FromHours(24) - TimeSpan.FromMinutes(5);
+        for (var t = first; t <= last; t += TimeSpan.FromMinutes(5))
+        {
+            // format as "hh:mm"
+            _durationOptions.Add(string.Format("{0:D2}:{1:D2}", (int)t.TotalHours, t.Minutes));
+        }
+    }
+
+    // Helper to get/create RowState from EmployeeId
+    private RowState GetRowState(int employeeId)
+    {
+        if (!_rowStates.TryGetValue(employeeId, out var s))
+        {
+            s = new RowState
+                {
+                    StartLocal = DateTime.Now.ToString("yyyy-MM-dd'T'HH:mm"),
+                    SelectedDuration = "08:00"
+                };
+            _rowStates[employeeId] = s;
+        }
+        return s;
+    }
+
+    // Called when admin clicks Add for a given employee
+    private async Task AddWorkEntryAsync(int employeeId)
+    {
+        var row = GetRowState(employeeId);
+        row.Error = null;
+        row.Success = false;
+
+        if (string.IsNullOrWhiteSpace(row.StartLocal))
+        {
+            row.Error = "Please choose a start date/time.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(row.SelectedDuration))
+        {
+            row.Error = "Please select a duration.";
+            return;
+        }
+
+        // Parse the datetime-local string exactly
+        if (!DateTime.TryParseExact(row.StartLocal,
+                                     "yyyy-MM-dd'T'HH:mm",
+                                     CultureInfo.InvariantCulture,
+                                     DateTimeStyles.AssumeLocal,
+                                     out var startLocal))
+        {
+            // Fallback: try a loose parse if formats vary
+            if (!DateTime.TryParse(row.StartLocal, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out startLocal))
+            {
+                row.Error = "Invalid start date/time format.";
+                return;
+            }
+        }
+
+        // Parse duration "hh:mm"
+        if (!TimeSpan.TryParseExact(row.SelectedDuration, @"hh\:mm", CultureInfo.InvariantCulture, out var duration)
+            && !TimeSpan.TryParse(row.SelectedDuration, out duration))
+        {
+            row.Error = "Invalid duration format.";
+            return;
+        }
+
+        if (duration == TimeSpan.Zero)
+        {
+            row.Error = "Duration must be at least 5 minutes.";
+            return;
+        }
+
+        row.IsSaving = true;
+        try
+        {
+            // convert startLocal to DateTimeOffset (client-generated AddWorkEntryDto expects DateTimeOffset)
+            var startOffset = new DateTimeOffset(startLocal);
+
+            // format duration as "hh:mm:ss" because NSwag-generated DTO expects a string that maps to TimeSpan on the server
+            var durationString = duration.ToString(@"hh\:mm\:ss");
+
+            var dto = new AddWorkEntryDto
+                {
+                    StartDateTime = startOffset,   // DateTimeOffset type on generated DTO
+                    Duration = durationString,     // string on generated DTO (formatted hh:mm:ss)
+                    EmployeeId = employeeId
+                };
+
+            var res = await WorkTimeService.AddWorkEntryAsync(dto);
+
+            if (res is null)
+            {
+                row.Error = "No response from server.";
+            }
+            else if (!res.IsSuccess)
+            {
+                row.Error = res.ErrorMessage ?? $"Server returned {(int?)res.StatusCode}";
+            }
+            else
+            {
+                row.Success = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            row.Error = $"Unexpected error: {ex.Message}";
+        }
+        finally
+        {
+            row.IsSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // simple per-row state container
+    private class RowState
+    {
+        // string in the exact format produced/accepted by <input type="datetime-local">
+        public string StartLocal { get; set; } = DateTime.Now.ToString("yyyy-MM-dd'T'HH:mm");
+        // "hh:mm" strings from the select
+        public string SelectedDuration { get; set; } = "08:00";
+        public bool IsSaving { get; set; }
+        public string? Error { get; set; }
+        public bool Success { get; set; }
     }
 }
 
@@ -47,24 +204,67 @@ else
                 <th>Name</th>
                 <th>Email</th>
                 <th>Phone</th>
+                <th style="min-width:340px">Add hours</th>
                 <th></th>
             </tr>
         </thead>
         <tbody>
-        @foreach (var u in _result.Data!)
-        {
-            <tr>
-                <td>@u.FirstName @u.LastName</td>
-                <td>@u.Email</td>
-                <td>@u.PhoneNumber</td>
-                <td>
-                    <NavLink class="btn btn-sm btn-outline-primary"
-                             href="@($"/users/profile/{u.UserId}")">
-                        View
-                    </NavLink>
-                </td>
-            </tr>
-        }
+            @foreach (var u in _result.Data!)
+            {
+                var row = GetRowState(u.EmployeeId);
+                <tr>
+                    <td>@u.FirstName @u.LastName</td>
+                    <td>@u.Email</td>
+                    <td>@u.PhoneNumber</td>
+
+                    @* Add hours column *@
+                    <td>
+                        <div class="d-flex gap-2 align-items-start">
+                            <div style="min-width:220px">
+                                <input class="form-control form-control-sm"
+                                       type="datetime-local"
+                                       value="@row.StartLocal"
+                                       @onchange="@(e => row.StartLocal = (e?.Value?.ToString() ?? string.Empty))" />
+                                <div class="small text-muted">Start</div>
+                            </div>
+
+                            <div style="min-width:100px">
+                                <select class="form-select form-select-sm"
+                                        value="@row.SelectedDuration"
+                                        @onchange="@(e => row.SelectedDuration = (e?.Value?.ToString() ?? string.Empty))">
+                                    @foreach (var d in _durationOptions)
+                                    {
+                                        <option value="@d">@d</option>
+                                    }
+                                </select>
+                                <div class="small text-muted">Duration (hh:mm)</div>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(row.Error))
+                        {
+                            <div class="text-danger small mt-1">@row.Error</div>
+                        }
+                        @if (row.Success)
+                        {
+                            <div class="text-success small mt-1">Saved</div>
+                        }
+                    </td>
+
+                    <td>
+                        <button class="btn btn-sm btn-primary"
+                                disabled="@row.IsSaving"
+                                @onclick="() => AddWorkEntryAsync(u.EmployeeId)">
+                            @(row.IsSaving ? "Saving..." : "Add")
+                        </button>
+
+                        <NavLink class="btn btn-sm btn-outline-primary ms-2"
+                                 href="@($"/users/profile/{u.UserId}")">
+                            View
+                        </NavLink>
+                    </td>
+                </tr>
+            }
         </tbody>
     </table>
 }
