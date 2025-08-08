@@ -1,0 +1,186 @@
+﻿@using System.Globalization
+@using Microsoft.AspNetCore.Components
+@using WTA_ClientApp.Services
+@using WTA_ClientApp.Services.Base
+@inject IWorkTimeService WorkTimeService
+@inject IJSRuntime JS
+
+<div class="modal fade @(IsOpen ? "show d-block" : "")" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Work Entry</h5>
+                <button type="button" class="btn-close" @onclick="Close"></button>
+            </div>
+            <div class="modal-body">
+                @if (!string.IsNullOrEmpty(_error))
+                {
+                    <div class="alert alert-danger">@_error</div>
+                }
+                @if (_success)
+                {
+                    <div class="alert alert-success">Saved.</div>
+                }
+
+                <div class="mb-2">
+                    <label class="form-label">Start (date + time)</label>
+                    <input class="form-control" type="datetime-local"
+                           value="@_startLocal"
+                           @onchange="@(e => _startLocal = e?.Value?.ToString() ?? string.Empty)" />
+                    <div class="small text-muted">Pick local start date/time</div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label">Duration (hh:mm)</label>
+                    <select class="form-select" value="@_selectedDuration" @onchange="@(e => _selectedDuration = e?.Value?.ToString() ?? string.Empty)">
+                        @foreach (var d in _durationOptions)
+                        {
+                            <option value="@d">@d</option>
+                        }
+                    </select>
+                    <div class="small text-muted">Choose duration (5-minute steps)</div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @onclick="Close" disabled="@_isSaving">Cancel</button>
+                <button class="btn btn-primary" @onclick="Save" disabled="@_isSaving">@(_isSaving ? "Saving..." : "Save")</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int EmployeeId { get; set; }
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    // UI state
+    private string _startLocal = DateTime.Now.ToString("yyyy-MM-dd'T'HH:mm");
+    private string _selectedDuration = "08:00";
+    private bool _isSaving;
+    private string? _error;
+    private bool _success;
+
+    private List<string> _durationOptions = new();
+
+    protected override void OnInitialized()
+    {
+        BuildDurationOptions();
+    }
+
+    private void BuildDurationOptions()
+    {
+        _durationOptions.Clear();
+        var first = TimeSpan.FromMinutes(5);
+        var last = TimeSpan.FromHours(24) - TimeSpan.FromMinutes(5);
+        for (var t = first; t <= last; t += TimeSpan.FromMinutes(5))
+        {
+            _durationOptions.Add(string.Format("{0:D2}:{1:D2}", (int)t.TotalHours, t.Minutes));
+        }
+
+        if (!_durationOptions.Contains(_selectedDuration))
+            _selectedDuration = _durationOptions.FirstOrDefault() ?? "00:30";
+    }
+
+    private async Task Save()
+    {
+        _error = null;
+        _success = false;
+
+        if (EmployeeId <= 0)
+        {
+            _error = "Invalid employee id.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_startLocal))
+        {
+            _error = "Please choose a start date/time.";
+            return;
+        }
+
+        if (!DateTime.TryParseExact(_startLocal, "yyyy-MM-dd'T'HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var startLocal))
+        {
+            if (!DateTime.TryParse(_startLocal, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out startLocal))
+            {
+                _error = "Invalid start date/time format.";
+                return;
+            }
+        }
+
+        if (!TimeSpan.TryParseExact(_selectedDuration, @"hh\:mm", CultureInfo.InvariantCulture, out var duration)
+            && !TimeSpan.TryParse(_selectedDuration, out duration))
+        {
+            _error = "Invalid duration format.";
+            return;
+        }
+
+        if (duration == TimeSpan.Zero)
+        {
+            _error = "Duration must be at least 5 minutes.";
+            return;
+        }
+
+        _isSaving = true;
+        try
+        {
+            var dto = new AddWorkEntryDto
+                {
+                    StartDateTime = new DateTimeOffset(startLocal),
+                    Duration = duration.ToString(@"hh\:mm\:ss"),
+                    EmployeeId = EmployeeId
+                };
+
+            var res = await WorkTimeService.AddWorkEntryAsync(dto);
+
+            if (res is null)
+            {
+                _error = "No response from server.";
+                return;
+            }
+            if (!res.IsSuccess)
+            {
+                _error = res.ErrorMessage ?? $"Server returned {(int?)res.StatusCode}";
+                return;
+            }
+
+            _success = true;
+
+            if (OnSaved.HasDelegate)
+            {
+                await OnSaved.InvokeAsync();
+            }
+
+            // short success blink before closing
+            await Task.Delay(600);
+            await Close();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Unexpected error: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Close()
+    {
+        _error = null;
+        _success = false;
+        _isSaving = false;
+
+        // reset defaults
+        _startLocal = DateTime.Now.ToString("yyyy-MM-dd'T'HH:mm");
+        _selectedDuration = _durationOptions.FirstOrDefault() ?? "00:30";
+
+        if (IsOpenChanged.HasDelegate)
+            await IsOpenChanged.InvokeAsync(false);
+        else
+            IsOpen = false;
+    }
+}

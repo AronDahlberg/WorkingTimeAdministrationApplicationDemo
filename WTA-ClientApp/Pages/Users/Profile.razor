@@ -9,6 +9,7 @@
 @using WTA_ClientApp.Services
 @using WTA_ClientApp.Services.Base
 @using WTA_ClientApp.Providers
+@using WTA_ClientApp.Shared
 @inject IUserService UserService
 @inject IWorkTimeService WorkTimeService
 @inject ApiAuthenticationStateProvider AuthStateProvider
@@ -224,8 +225,13 @@ else
        WORK ENTRIES SECTION
        ========================= *@
     <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Work Entries</h5>
+            <button class="btn btn-sm btn-primary" @onclick="() => _showAddWorkModal = true">
+                <i class="bi bi-plus-lg"></i> Add Work
+            </button>
+        </div>
         <div class="card-body">
-            <h5 class="card-title">Work entries</h5>
 
             @if (_entriesLoading)
             {
@@ -403,6 +409,12 @@ else
             }
         </div>
     </div>
+    @if (_result?.Data?.EmployeeId > 0)
+    {
+    <WorkEntryModal EmployeeId="@_result.Data.EmployeeId"
+                           @bind-IsOpen="_showAddWorkModal"
+                           OnSaved="OnWorkEntrySaved" />
+    }
 }
 
 @code {
@@ -439,6 +451,9 @@ else
 
     private TimeSpan _yearTotalDuration = TimeSpan.Zero;
     private double _yearTotalWage = 0.0;
+
+    // control modal visibility
+    private bool _showAddWorkModal = false;
 
     // SERVICE LIFECYCLE
     protected override async Task OnInitializedAsync()
@@ -556,6 +571,15 @@ else
         finally
         {
             _isSaving = false;
+        }
+    }
+
+    private async Task OnWorkEntrySaved()
+    {
+        // reload work entries so totals and UI reflect the new entry
+        if (_result?.Data?.EmployeeId > 0)
+        {
+            await LoadWorkEntriesAsync(_result.Data.EmployeeId);
         }
     }
 
