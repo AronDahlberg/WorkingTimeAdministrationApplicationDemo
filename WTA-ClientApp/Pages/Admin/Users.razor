@@ -8,11 +8,241 @@
 @inject IUserService UserService
 @inject IWorkTimeService WorkTimeService
 
-<h3>All Users</h3>
+<style>
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0,0,0,.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1050;
+    }
+
+    .modal-card {
+        width: 100%;
+        max-width: 720px;
+        background: white;
+        border-radius: .375rem;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+        padding: 1rem;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="m-0">All Users</h3>
+    <div>
+        <button class="btn btn-primary" @onclick="OpenAddUser">Add user</button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_globalInfo))
+{
+    <div class="alert alert-success">@_globalInfo</div>
+}
+@if (!string.IsNullOrEmpty(_globalError))
+{
+    <div class="alert alert-danger">@_globalError</div>
+}
+
+@if (_isLoading)
+{
+    <p><em>Loading users…</em></p>
+}
+else if (_result is null)
+{
+    <div class="alert alert-warning">Unexpected error: no result.</div>
+}
+else if (!_result.IsSuccess)
+{
+    <div class="alert alert-danger">
+        @(_result.ErrorMessage ?? "Unable to fetch users.")
+    </div>
+}
+else
+{
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th style="min-width:340px">Add hours</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var u in _result.Data!)
+            {
+                var row = GetRowState(u.EmployeeId);
+                <tr>
+                    <td>@u.FirstName @u.LastName</td>
+                    <td>@u.Email</td>
+                    <td>@u.PhoneNumber</td>
+
+                    @* Add hours column *@
+                    <td>
+                        <div class="d-flex gap-2 align-items-start">
+                            <div style="min-width:220px">
+                                <input class="form-control form-control-sm"
+                                       type="datetime-local"
+                                       value="@row.StartLocal"
+                                       @onchange="@(e => row.StartLocal = (e?.Value?.ToString() ?? string.Empty))" />
+                                <div class="small text-muted">Start</div>
+                            </div>
+
+                            <div style="min-width:100px">
+                                <select class="form-select form-select-sm"
+                                        value="@row.SelectedDuration"
+                                        @onchange="@(e => row.SelectedDuration = (e?.Value?.ToString() ?? string.Empty))">
+                                    @foreach (var d in _durationOptions)
+                                    {
+                                        <option value="@d">@d</option>
+                                    }
+                                </select>
+                                <div class="small text-muted">Duration (hh:mm)</div>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(row.Error))
+                        {
+                            <div class="text-danger small mt-1">@row.Error</div>
+                        }
+                        @if (row.Success)
+                        {
+                            <div class="text-success small mt-1">Saved</div>
+                        }
+                    </td>
+
+                    <td>
+                        <button class="btn btn-sm btn-primary"
+                                disabled="@row.IsSaving"
+                                @onclick="() => AddWorkEntryAsync(u.EmployeeId)">
+                            @(row.IsSaving ? "Saving..." : "Add")
+                        </button>
+
+                        <NavLink class="btn btn-sm btn-outline-primary ms-2"
+                                 href="@($"/users/profile/{u.UserId}")">
+                            View
+                        </NavLink>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@* =====================
+   ADD USER MODAL
+   ===================== *@
+@if (_showAddModal)
+{
+    <div class="modal-overlay" role="dialog" aria-modal="true">
+        <div class="modal-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="m-0">Create user</h5>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="CloseAddUser">×</button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_addError))
+            {
+                <div class="alert alert-danger">@_addError</div>
+            }
+
+            <EditForm Model="_registrationModel" OnValidSubmit="HandleAddUser">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Email</label>
+                        <InputText class="form-control" type="email" @bind-Value="_registrationModel.Email" />
+                        <ValidationMessage For="@(() => _registrationModel.Email)" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Password</label>
+                        <InputText class="form-control" type="password" @bind-Value="_registrationModel.Password" />
+                        <ValidationMessage For="@(() => _registrationModel.Password)" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">First name</label>
+                        <InputText class="form-control" @bind-Value="_registrationModel.FirstName" />
+                        <ValidationMessage For="@(() => _registrationModel.FirstName)" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Last name</label>
+                        <InputText class="form-control" @bind-Value="_registrationModel.LastName" />
+                        <ValidationMessage For="@(() => _registrationModel.LastName)" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">SSN</label>
+                        <InputText class="form-control" @bind-Value="_registrationModel.SocialSecurityNumber" />
+                        <ValidationMessage For="@(() => _registrationModel.SocialSecurityNumber)" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Phone</label>
+                        <InputText class="form-control" @bind-Value="_registrationModel.PhoneNumber" />
+                        <ValidationMessage For="@(() => _registrationModel.PhoneNumber)" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Emergency contact</label>
+                        <InputText class="form-control" @bind-Value="_registrationModel.EmergencyContactNumber" />
+                        <ValidationMessage For="@(() => _registrationModel.EmergencyContactNumber)" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Country</label>
+                        <InputText class="form-control" @bind-Value="_registrationModel.Country" />
+                        <ValidationMessage For="@(() => _registrationModel.Country)" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">City</label>
+                        <InputText class="form-control" @bind-Value="_registrationModel.City" />
+                        <ValidationMessage For="@(() => _registrationModel.City)" />
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Address</label>
+                        <InputText class="form-control" @bind-Value="_registrationModel.Address" />
+                        <ValidationMessage For="@(() => _registrationModel.Address)" />
+                    </div>
+
+                    <div class="col-6 col-md-4">
+                        <label class="form-label">Postal code</label>
+                        <InputText class="form-control" @bind-Value="_registrationModel.PostalCode" />
+                        <ValidationMessage For="@(() => _registrationModel.PostalCode)" />
+                    </div>
+
+                    <div class="col-12 col-md-4 d-flex align-items-end justify-content-end">
+                        <div>
+                            <button class="btn btn-primary me-2" type="submit" disabled="@_isAdding">@(_isAdding ? "Creating..." : "Create")</button>
+                            <button class="btn btn-secondary" type="button" @onclick="CloseAddUser" disabled="@_isAdding">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
 
 @code {
     private ServiceResult<ICollection<UserDto>>? _result;
     private bool _isLoading = true;
+
+    // add-user modal state
+    private bool _showAddModal = false;
+    private UserRegistrationDto _registrationModel = new();
+    private bool _isAdding = false;
+    private string? _addError;
+    private string? _globalInfo;
+    private string? _globalError;
 
     // Per-employee UI state keyed by EmployeeId
     private Dictionary<int, RowState> _rowStates = new();
@@ -24,31 +254,86 @@
     {
         BuildDurationOptions(); // generate hh:mm in 5min steps
 
-        try
+        await LoadUsersAsync();
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        _isLoading = true;
+        _result = await UserService.GetAllUsersAsync();
+
+        // initialize per-row state
+        if (_result?.IsSuccess == true && _result.Data != null)
         {
-            _result = await UserService.GetAllUsersAsync();
-            if (_result?.IsSuccess == true)
+            foreach (var u in _result.Data)
             {
-                // initialize per-row state
-                foreach (var u in _result.Data!)
+                var empId = u.EmployeeId;
+                if (!_rowStates.ContainsKey(empId))
                 {
-                    // if EmployeeId missing or zero, skip or set a default
-                    var empId = u.EmployeeId;
-                    if (!_rowStates.ContainsKey(empId))
-                    {
-                        _rowStates[empId] = new RowState
-                            {
-                            // datetime-local requires yyyy-MM-ddTHH:mm format
-                                StartLocal = DateTime.Now.ToString("yyyy-MM-dd'T'HH:mm"),
-                                SelectedDuration = "08:00" // default duration (change if you like)
-                            };
-                    }
+                    _rowStates[empId] = new RowState
+                        {
+                            StartLocal = DateTime.Now.ToString("yyyy-MM-dd'T'HH:mm"),
+                            SelectedDuration = "08:00"
+                        };
                 }
             }
         }
+
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private void OpenAddUser()
+    {
+        _registrationModel = new UserRegistrationDto();
+        _addError = null;
+        _showAddModal = true;
+    }
+
+    private void CloseAddUser()
+    {
+        _showAddModal = false;
+        _isAdding = false;
+        _addError = null;
+    }
+
+    private async Task HandleAddUser()
+    {
+        _addError = null;
+        _globalInfo = null;
+        _globalError = null;
+
+        _isAdding = true;
+        try
+        {
+            var res = await UserService.CreateUserAsync(_registrationModel);
+
+            if (res == null)
+            {
+                _addError = "No response from server.";
+                return;
+            }
+
+            if (!res.IsSuccess)
+            {
+                _addError = res.ErrorMessage ?? $"Server returned {(int?)res.StatusCode}";
+                return;
+            }
+
+            // Success: close modal, refresh list, show confirmation
+            _showAddModal = false;
+            _isAdding = false;
+            _globalInfo = "User created successfully.";
+            await LoadUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            _addError = $"Unexpected error: {ex.Message}";
+        }
         finally
         {
-            _isLoading = false;
+            _isAdding = false;
+            StateHasChanged();
         }
     }
 
@@ -180,91 +465,4 @@
         public string? Error { get; set; }
         public bool Success { get; set; }
     }
-}
-
-@if (_isLoading)
-{
-    <p><em>Loading users…</em></p>
-}
-else if (_result is null)
-{
-    <div class="alert alert-warning">Unexpected error: no result.</div>
-}
-else if (!_result.IsSuccess)
-{
-    <div class="alert alert-danger">
-        @(_result.ErrorMessage ?? "Unable to fetch users.")
-    </div>
-}
-else
-{
-    <table class="table table-sm">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th style="min-width:340px">Add hours</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var u in _result.Data!)
-            {
-                var row = GetRowState(u.EmployeeId);
-                <tr>
-                    <td>@u.FirstName @u.LastName</td>
-                    <td>@u.Email</td>
-                    <td>@u.PhoneNumber</td>
-
-                    @* Add hours column *@
-                    <td>
-                        <div class="d-flex gap-2 align-items-start">
-                            <div style="min-width:220px">
-                                <input class="form-control form-control-sm"
-                                       type="datetime-local"
-                                       value="@row.StartLocal"
-                                       @onchange="@(e => row.StartLocal = (e?.Value?.ToString() ?? string.Empty))" />
-                                <div class="small text-muted">Start</div>
-                            </div>
-
-                            <div style="min-width:100px">
-                                <select class="form-select form-select-sm"
-                                        value="@row.SelectedDuration"
-                                        @onchange="@(e => row.SelectedDuration = (e?.Value?.ToString() ?? string.Empty))">
-                                    @foreach (var d in _durationOptions)
-                                    {
-                                        <option value="@d">@d</option>
-                                    }
-                                </select>
-                                <div class="small text-muted">Duration (hh:mm)</div>
-                            </div>
-                        </div>
-
-                        @if (!string.IsNullOrEmpty(row.Error))
-                        {
-                            <div class="text-danger small mt-1">@row.Error</div>
-                        }
-                        @if (row.Success)
-                        {
-                            <div class="text-success small mt-1">Saved</div>
-                        }
-                    </td>
-
-                    <td>
-                        <button class="btn btn-sm btn-primary"
-                                disabled="@row.IsSaving"
-                                @onclick="() => AddWorkEntryAsync(u.EmployeeId)">
-                            @(row.IsSaving ? "Saving..." : "Add")
-                        </button>
-
-                        <NavLink class="btn btn-sm btn-outline-primary ms-2"
-                                 href="@($"/users/profile/{u.UserId}")">
-                            View
-                        </NavLink>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
 }

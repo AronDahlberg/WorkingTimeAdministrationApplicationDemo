@@ -8,5 +8,6 @@ namespace WTA_ClientApp.Services
         Task<ServiceResult<UserDto>> GetUserByIdAsync(string userId);
         Task<ServiceResult<ICollection<UserDto>>> GetAllUsersAsync();
         Task<ServiceResult<object>> UpdateUserAsync(UserDto dto);
+        Task<ServiceResult<object>> CreateUserAsync(UserRegistrationDto dto);
     }
 }

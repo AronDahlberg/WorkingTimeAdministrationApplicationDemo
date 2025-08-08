@@ -7,6 +7,70 @@ namespace WTA_ClientApp.Services
 {
     public class UserService(IClient client, ILocalStorageService localStorage) : BaseHttpService(localStorage, client), IUserService
     {
+        public async Task<ServiceResult<object>> CreateUserAsync(UserRegistrationDto dto)
+        {
+            try
+            {
+                await GetBearerToken();
+
+                await client.RegisterAsync(dto);
+
+                return new ServiceResult<object>
+                {
+                    IsSuccess = true,
+                    Data = null,
+                    StatusCode = HttpStatusCode.Created
+                };
+            }
+            catch (ApiException ex)
+            {
+                var code = (HttpStatusCode)ex.StatusCode;
+                var serverText = ex.Response?.Trim();
+
+                if (string.IsNullOrEmpty(serverText) && !string.IsNullOrEmpty(ex.Message))
+                {
+                    serverText = ex.Message;
+                }
+
+                string message = code switch
+                {
+                    HttpStatusCode.BadRequest => !string.IsNullOrEmpty(serverText)
+                        ? $"Bad request: {serverText}"
+                        : "Bad request. Please check the input.",
+                    HttpStatusCode.Conflict => !string.IsNullOrEmpty(serverText)
+                        ? $"Conflict: {serverText}"
+                        : "A user with the same identifier already exists.",
+                    HttpStatusCode.Unauthorized => "You are not authenticated. Please sign in and try again.",
+                    HttpStatusCode.Forbidden => "You do not have permission to create users.",
+                    _ when !string.IsNullOrEmpty(serverText) => $"Server returned {(int)code}: {serverText}",
+                    _ => $"Server returned {(int)code} ({code})."
+                };
+
+                return new ServiceResult<object>
+                {
+                    IsSuccess = false,
+                    ErrorMessage = message,
+                    StatusCode = code
+                };
+            }
+            catch (HttpRequestException)
+            {
+                return new ServiceResult<object>
+                {
+                    IsSuccess = false,
+                    ErrorMessage = "Cannot reach the server. Please check your network connection."
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<object>
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"An unexpected error occurred: {ex.Message}"
+                };
+            }
+        }
+
         public async Task<ServiceResult<UserDto>> GetUserByIdAsync(string userId)
         {
             try
