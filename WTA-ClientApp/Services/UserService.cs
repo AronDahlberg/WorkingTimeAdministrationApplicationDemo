@@ -62,5 +62,40 @@ namespace WTA_ClientApp.Services
                 };
             }
         }
+
+        public async Task<ServiceResult<ICollection<UserDto>>> GetAllUsersAsync()
+        {
+            try
+            {
+                await GetBearerToken();
+
+                var dtos = await client.GetAllUsersAsync();
+                return new ServiceResult<ICollection<UserDto>> { IsSuccess = true, Data = dtos };
+            }
+            catch (ApiException ex)
+            {
+                var code = (HttpStatusCode)ex.StatusCode;
+                var serverText = ex.Response?.Trim();
+                string message = code switch
+                {
+                    HttpStatusCode.Forbidden => "You do not have permission to view user list.",
+                    _ when !string.IsNullOrEmpty(serverText) => $"Server returned {(int)code}: {serverText}",
+                    _ => $"Server returned {(int)code} {code}"
+                };
+                return new ServiceResult<ICollection<UserDto>> { IsSuccess = false, ErrorMessage = message, StatusCode = code };
+            }
+            catch (HttpRequestException)
+            {
+                return new ServiceResult<ICollection<UserDto>>
+                {
+                    IsSuccess = false,
+                    ErrorMessage = "Cannot reach the server. Please check your network connection."
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<ICollection<UserDto>> { IsSuccess = false, ErrorMessage = ex.Message };
+            }
+        }
     }
 }

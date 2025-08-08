@@ -6,5 +6,6 @@ namespace WTA_ClientApp.Services
     public interface IUserService
     {
         Task<ServiceResult<UserDto>> GetUserByIdAsync(string userId);
+        Task<ServiceResult<ICollection<UserDto>>> GetAllUsersAsync();
     }
 }

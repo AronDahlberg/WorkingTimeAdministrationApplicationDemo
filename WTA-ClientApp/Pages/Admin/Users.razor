@@ -1,0 +1,70 @@
+﻿@page "/admin/users"
+@attribute [Authorize(Roles = "Admin")]
+@using Microsoft.AspNetCore.Authorization
+@using WTA_ClientApp.Common
+@using WTA_ClientApp.Services
+@using WTA_ClientApp.Services.Base
+@inject IUserService UserService
+
+<h3>All Users</h3>
+
+@code {
+    private ServiceResult<ICollection<UserDto>>? _result;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _result = await UserService.GetAllUsersAsync();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}
+
+@if (_isLoading)
+{
+    <p><em>Loading users…</em></p>
+}
+else if (_result is null)
+{
+    <div class="alert alert-warning">Unexpected error: no result.</div>
+}
+else if (!_result.IsSuccess)
+{
+    <div class="alert alert-danger">
+        @(_result.ErrorMessage ?? "Unable to fetch users.")
+    </div>
+}
+else
+{
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var u in _result.Data!)
+        {
+            <tr>
+                <td>@u.FirstName @u.LastName</td>
+                <td>@u.Email</td>
+                <td>@u.PhoneNumber</td>
+                <td>
+                    <NavLink class="btn btn-sm btn-outline-primary"
+                             href="@($"/users/profile/{u.UserId}")">
+                        View
+                    </NavLink>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
