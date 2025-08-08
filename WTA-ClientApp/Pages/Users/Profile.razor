@@ -1,13 +1,54 @@
 ﻿@page "/users/profile/{UserId}"
 @using System.Security.Claims
 @using System.Globalization
+@using System.Linq
+@using System.Collections.Generic
+@using System.Threading.Tasks
+@using System
 @using WTA_ClientApp.Common
 @using WTA_ClientApp.Services
 @using WTA_ClientApp.Services.Base
 @using WTA_ClientApp.Providers
 @inject IUserService UserService
+@inject IWorkTimeService WorkTimeService
 @inject ApiAuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+
+<style>
+    /* small helper for rotating arrow */
+    .rotate-90 {
+        transform: rotate(90deg);
+        transition: transform .2s ease-in-out;
+    }
+    .rotate-270 {
+        transform: rotate(270deg);
+        transition: transform .2s ease-in-out;
+    }
+
+    /* thin month card summary */
+    .month-summary {
+        cursor: pointer;
+        user-select: none;
+        padding: .5rem 1rem;
+    }
+
+    .month-summary:hover {
+        background-color: rgba(0,0,0,0.02);
+    }
+
+    .month-card-expanded {
+        margin-top: .5rem;
+        margin-bottom: .5rem;
+    }
+
+    .entry-date {
+        font-weight: 600;
+    }
+    .entry-time {
+        font-weight: 400;
+        color: #6c757d;
+    }
+</style>
 
 <h3>User Profile</h3>
 
@@ -29,7 +70,7 @@ else if (!_result.IsSuccess)
 }
 else
 {
-    <div class="card">
+    <div class="card mb-4">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-start">
                 <h5 class="card-title mb-3 fw-bold">@_result.Data!.FirstName @_result.Data.LastName</h5>
@@ -62,7 +103,7 @@ else
                     <dd class="col-sm-9">@_result.Data.EmergencyContactNumber</dd>
 
                     <dt class="col-sm-3">Hourly Wage</dt>
-                    <dd class="col-sm-9">@_result.Data.HourlyWage.ToString("0.##", CultureInfo.InvariantCulture) kr/t</dd>
+                    <dd class="col-sm-9">@_result.Data.HourlyWage.ToString("0.00", CultureInfo.InvariantCulture)</dd>
 
                     <dt class="col-sm-3">SSN</dt>
                     <dd class="col-sm-9">@_result.Data.SocialSecurityNumber</dd>
@@ -120,7 +161,7 @@ else
                             }
                             else
                             {
-                                <div class="form-control-plaintext">@_result.Data.HourlyWage.ToString("0.##", CultureInfo.InvariantCulture) kr/t</div>
+                                <div class="form-control-plaintext">@_result.Data.HourlyWage.ToString("0.00", CultureInfo.InvariantCulture)</div>
                             }
                         </div>
                     </div>
@@ -169,6 +210,7 @@ else
         </div>
     </div>
 
+    @* Save/cancel status *@
     @if (!string.IsNullOrEmpty(_saveError))
     {
         <div class="mt-2 alert alert-danger">@_saveError</div>
@@ -177,6 +219,190 @@ else
     {
         <div class="mt-2 alert alert-success">Profile updated.</div>
     }
+
+    @* =========================
+       WORK ENTRIES SECTION
+       ========================= *@
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Work entries</h5>
+
+            @if (_entriesLoading)
+            {
+                <p><em>Loading work entries…</em></p>
+            }
+            else if (_entriesResult is null)
+            {
+                <div class="alert alert-warning">No work entries data.</div>
+            }
+            else if (!_entriesResult.IsSuccess)
+            {
+                <div class="alert alert-danger">@_entriesResult.ErrorMessage</div>
+            }
+            else
+            {
+                <div class="mb-3">
+                    <div class="card p-3">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-auto">
+                                <label class="form-label mb-1">Year</label>
+                                <select class="form-select" @onchange="OnYearChanged" value="@_selectedYear">
+                                    @foreach (var y in _availableYears)
+                                    {
+                                        <option value="@y">@y</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="col-auto">
+                                <label class="form-label mb-1">Period</label>
+                                <select class="form-select" @onchange="OnPeriodChanged" value="@_selectedPeriodValue">
+                                    <option value="FULL">Full year</option>
+                                    @foreach (var m in _availableMonthsForYear)
+                                    {
+                                        var opt = m.Month.ToString("D2") + "|" + m.Month; // value encoded; not required but safe
+                                        <option value="@opt">@m.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* If Full year chosen, show totals summary card *@
+                @if (_isFullYearSelected)
+                {
+                    <div class="card mb-3 p-3">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <div class="text-muted">Year totals (@_selectedYear)</div>
+                                <div class="h5 mb-0">@FormatTimeSpan(_yearTotalDuration) • @_yearTotalWage.ToString("0.00", CultureInfo.InvariantCulture)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Month cards *@
+                    @foreach (var monthInfo in _monthsInSelectedYearOrdered)
+                    {
+                        var m = monthInfo.Month;
+                        var isExpanded = _expandedMonths.Contains(m);
+                        <div class="card month-card-expanded">
+                            <div class="month-summary d-flex justify-content-between align-items-center"
+                                 @onclick="() => ToggleMonth(m)">
+                                <div>
+                                    <strong>@monthInfo.Name</strong>
+                                    <div class="small text-muted">@FormatTimeSpan(monthInfo.TotalDuration) • @monthInfo.TotalWage.ToString("0.00", CultureInfo.InvariantCulture)</div>
+                                </div>
+                                <div class="ms-3">
+                                    <span class="bi" style="transform:rotate(@(isExpanded ? 90 : 270)deg); transition:transform .2s;">
+                                        &#9656;
+                                    </span>
+                                </div>
+                            </div>
+
+                            @if (isExpanded)
+                            {
+                                <div class="card-body">
+                                    @* Render the weeks for the month *@
+                                    @foreach (var week in monthInfo.Weeks)
+                                    {
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <div>
+                                                    <strong>Week @week.WeekOfYear</strong>
+                                                    <div class="small text-muted">(@FormatDateOnly(week.WeekStartInMonth) – @FormatDateOnly(week.WeekEndInMonth))</div>
+                                                </div>
+                                                <div class="text-end">
+                                                    <div class="small text-muted">Total</div>
+                                                    <div>@FormatTimeSpan(week.TotalDuration) • @week.TotalWage.ToString("0.00", CultureInfo.InvariantCulture)</div>
+                                                </div>
+                                            </div>
+
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width:60%">Date / Time</th>
+                                                        <th style="width:40%">Wage</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var e in week.Entries)
+                                                    {
+                                                        <tr>
+                                                            <td>
+                                                                <div class="entry-date">@FormatDateOnly(e.StartDateTime.LocalDateTime.Date)</div>
+                                                                <div class="entry-time">@FormatTimeRange(e.StartDateTime, e.Duration)</div>
+                                                            </td>
+                                                            <td class="text-nowrap">@e.TotalWage.ToString("0.00", CultureInfo.InvariantCulture)</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    @* Single month selected: show only that expanded month card (non-collapsible) *@
+                    @if (_singleSelectedMonth != null)
+                    {
+                        var monthInfo = _singleSelectedMonth;
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>@monthInfo.Name</strong>
+                                        <div class="small text-muted">@FormatTimeSpan(monthInfo.TotalDuration) • @monthInfo.TotalWage.ToString("0.00", CultureInfo.InvariantCulture)</div>
+                                    </div>
+                                </div>
+
+                                @foreach (var week in monthInfo.Weeks)
+                                {
+                                    <div class="mb-3 mt-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <strong>Week @week.WeekOfYear</strong>
+                                                <div class="small text-muted">(@FormatDateOnly(week.WeekStartInMonth) – @FormatDateOnly(week.WeekEndInMonth))</div>
+                                            </div>
+                                            <div class="text-end">
+                                                <div class="small text-muted">Total</div>
+                                                <div>@FormatTimeSpan(week.TotalDuration) • @week.TotalWage.ToString("0.00", CultureInfo.InvariantCulture)</div>
+                                            </div>
+                                        </div>
+
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width:60%">Date / Time</th>
+                                                    <th style="width:40%">Wage</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var e in week.Entries)
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            <div class="entry-date">@FormatDateOnly(e.StartDateTime.LocalDateTime.Date)</div>
+                                                            <div class="entry-time">@FormatTimeRange(e.StartDateTime, e.Duration)</div>
+                                                        </td>
+                                                        <td class="text-nowrap">@e.TotalWage.ToString("0.00", CultureInfo.InvariantCulture)</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            }
+        </div>
+    </div>
 }
 
 @code {
@@ -186,16 +412,35 @@ else
     private ServiceResult<UserDto>? _result;
     private bool _isLoading = true;
 
-    // edit mode state
+    // Edit profile state
     private bool _editMode;
     private bool _isSaving;
     private UserDto _editModel = new();
     private string? _saveError;
     private bool _saveSuccess;
 
-    // admin flag (to allow editing HourlyWage)
     private bool _isAdmin;
 
+    // ------------------------
+    // Work entries state
+    // ------------------------
+    private ServiceResult<ICollection<WorkEntryDto>>? _entriesResult;
+    private bool _entriesLoading;
+
+    // processed grouping structures
+    private List<int> _availableYears = new();
+    private List<MonthSummary> _availableMonthsForYear = new();
+    private int _selectedYear;
+    private bool _isFullYearSelected = true;
+    private string _selectedPeriodValue = "FULL"; // "FULL" or encoded month value
+    private List<MonthSummary> _monthsInSelectedYearOrdered = new();
+    private MonthSummary? _singleSelectedMonth = null;
+    private HashSet<int> _expandedMonths = new();
+
+    private TimeSpan _yearTotalDuration = TimeSpan.Zero;
+    private double _yearTotalWage = 0.0;
+
+    // SERVICE LIFECYCLE
     protected override async Task OnInitializedAsync()
     {
         try
@@ -212,6 +457,12 @@ else
                     || string.Equals(c.Type, "roles", StringComparison.OrdinalIgnoreCase))
                     && user.Claims.Any(c => string.Equals(c.Value, "Admin", StringComparison.OrdinalIgnoreCase));
             }
+
+            // load work entries for this employee (if EmployeeId present)
+            if (_result?.Data?.EmployeeId > 0)
+            {
+                await LoadWorkEntriesAsync(_result.Data.EmployeeId);
+            }
         }
         finally
         {
@@ -224,14 +475,12 @@ else
         _isLoading = true;
         _result = await UserService.GetUserByIdAsync(UserId);
         _isLoading = false;
-        StateHasChanged();
     }
 
     private void EnterEditMode()
     {
         if (_result?.Data == null) return;
 
-        // Clone current data into editModel to avoid mutating the displayed data until save
         _editModel = new UserDto
             {
                 UserId = _result.Data.UserId,
@@ -266,7 +515,6 @@ else
         _saveError = null;
         _saveSuccess = false;
 
-        // If not admin, ensure HourlyWage wasn't changed client-side (defensive)
         if (!_isAdmin && _result?.Data != null)
         {
             _editModel.HourlyWage = _result.Data.HourlyWage;
@@ -276,7 +524,6 @@ else
 
         try
         {
-            // UpdateUserAsync returns ServiceResult<object> (we ignore any res.Data)
             var res = await UserService.UpdateUserAsync(_editModel);
 
             if (res is null)
@@ -292,6 +539,12 @@ else
                 // success -> reload authoritative data from server (so invalid changes are not shown)
                 await LoadProfileAsync();
 
+                // reload work entries for this employee id if changed
+                if (_result?.Data?.EmployeeId > 0)
+                {
+                    await LoadWorkEntriesAsync(_result.Data.EmployeeId);
+                }
+
                 _saveSuccess = true;
                 _editMode = false;
             }
@@ -304,5 +557,341 @@ else
         {
             _isSaving = false;
         }
+    }
+
+    // ------------------------
+    // Work entries helpers
+    // ------------------------
+
+    private async Task LoadWorkEntriesAsync(int employeeId)
+    {
+        _entriesLoading = true;
+        _entriesResult = await WorkTimeService.GetWorkEntriesAsync(employeeId);
+
+        if (_entriesResult?.IsSuccess == true && _entriesResult.Data != null)
+        {
+            // process the raw entries into year/month/week groupings
+            var entries = _entriesResult.Data.OrderBy(e => e.StartDateTime).ToList(); // earliest-first
+            ProcessWorkEntries(entries);
+        }
+        else
+        {
+            _availableYears = new List<int>();
+            _availableMonthsForYear = new List<MonthSummary>();
+            _monthsInSelectedYearOrdered = new List<MonthSummary>();
+            _singleSelectedMonth = null;
+            _availableYears = new List<int>();
+        }
+
+        _entriesLoading = false;
+        StateHasChanged();
+    }
+
+    private void ProcessWorkEntries(ICollection<WorkEntryDto> entriesCollection)
+    {
+        // convert to list sorted earliest-first
+        var entries = entriesCollection.OrderBy(e => e.StartDateTime).ToList();
+
+        // group by year -> month -> week
+        var byYear = entries
+            .GroupBy(e => e.StartDateTime.LocalDateTime.Year)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        // available years sorted ascending, but default pick latest (most recent) as selected
+        _availableYears = byYear.Keys.OrderBy(y => y).ToList();
+
+        if (_availableYears.Count == 0)
+        {
+            _selectedYear = DateTime.Now.Year;
+            _monthsInSelectedYearOrdered = new List<MonthSummary>();
+            _availableMonthsForYear = new List<MonthSummary>();
+            _singleSelectedMonth = null;
+            return;
+        }
+
+        // default to the most recent year that has entries
+        _selectedYear = _availableYears.Max();
+
+        // build months for the selected year
+        BuildMonthsForSelectedYear(byYear);
+
+        // default period: full year
+        _isFullYearSelected = true;
+        _selectedPeriodValue = "FULL";
+        _expandedMonths.Clear();
+
+        // build totals
+        ComputeYearTotals();
+    }
+
+    private void BuildMonthsForSelectedYear(Dictionary<int, List<WorkEntryDto>> byYear)
+    {
+        if (!byYear.TryGetValue(_selectedYear, out var yearEntries))
+        {
+            _availableMonthsForYear = new List<MonthSummary>();
+            _monthsInSelectedYearOrdered = new List<MonthSummary>();
+            _singleSelectedMonth = null;
+            return;
+        }
+
+        // group by month number (1..12)
+        var months = yearEntries
+            .GroupBy(e => e.StartDateTime.LocalDateTime.Month)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        // create MonthSummary for months present, with months ordered Jan -> Dec (ascending by month)
+        var monthSummaries = months
+            .OrderBy(g => g.Key)
+            .Select(kv => BuildMonthSummary(_selectedYear, kv.Key, kv.Value))
+            .ToList();
+
+        _availableMonthsForYear = monthSummaries.Select(m => new MonthSummary { Month = m.Month, Name = m.Name }).ToList(); // for dropdown
+        _monthsInSelectedYearOrdered = monthSummaries;
+        _singleSelectedMonth = null;
+    }
+
+    // build MonthSummary including weeks grouped by ISO week and limited to dates within this month
+    private MonthSummary BuildMonthSummary(int year, int month, List<WorkEntryDto> entriesForMonth)
+    {
+        var mInfo = new MonthSummary
+            {
+                Year = year,
+                Month = month,
+                Name = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month)
+            };
+
+        // ensure entries are sorted earliest-first
+        var entries = entriesForMonth.OrderBy(e => e.StartDateTime).ToList();
+
+        // compute totals
+        long totalTicks = 0;
+        double totalWage = 0;
+        foreach (var e in entries)
+        {
+            if (TryParseDuration(e.Duration, out var ts))
+            {
+                totalTicks += ts.Ticks;
+            }
+            totalWage += e.TotalWage;
+        }
+        mInfo.TotalDuration = TimeSpan.FromTicks(totalTicks);
+        mInfo.TotalWage = totalWage;
+
+        // Group into weeks using ISO week number (ISOWeek)
+        var weeks = new Dictionary<int, List<WorkEntryDto>>();
+        foreach (var e in entries)
+        {
+            var local = e.StartDateTime.LocalDateTime;
+            var weekNum = ISOWeek.GetWeekOfYear(local.Date);
+            if (!weeks.TryGetValue(weekNum, out var list)) { list = new List<WorkEntryDto>(); weeks[weekNum] = list; }
+            list.Add(e);
+        }
+
+        // Build WeekSummary objects ordered by week start date (earliest-first)
+        var weekSummaries = weeks
+            .Select(kv =>
+            {
+                var weekNum = kv.Key;
+                var weekEntries = kv.Value.OrderBy(en => en.StartDateTime).ToList();
+
+                // Determine the date range for this week that intersects the given month
+                // Get the Monday date from any entry's date (ISO weeks start Mon)
+                var anyDate = weekEntries.First().StartDateTime.LocalDateTime.Date;
+                // find week start (Monday) and end (Sunday)
+                var weekStart = anyDate.AddDays(DayOfWeek.Monday - anyDate.DayOfWeek);
+                // A small helper because DayOfWeek enum has Sunday=0; compute ISO Monday start:
+                weekStart = GetMondayOfWeek(anyDate);
+                var weekEnd = weekStart.AddDays(6);
+
+                // clip to month boundaries
+                var monthStart = new DateTime(year, month, 1);
+                var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+                var weekStartInMonth = weekStart < monthStart ? monthStart : weekStart;
+                var weekEndInMonth = weekEnd > monthEnd ? monthEnd : weekEnd;
+
+                // compute week totals
+                long weekTicks = 0;
+                double weekWage = 0;
+                foreach (var we in weekEntries)
+                {
+                    if (TryParseDuration(we.Duration, out var ts)) weekTicks += ts.Ticks;
+                    weekWage += we.TotalWage;
+                }
+
+                return new WeekSummary
+                    {
+                        WeekOfYear = weekNum,
+                        WeekStartInMonth = weekStartInMonth,
+                        WeekEndInMonth = weekEndInMonth,
+                        Entries = weekEntries,
+                        TotalDuration = TimeSpan.FromTicks(weekTicks),
+                        TotalWage = weekWage
+                    };
+            })
+            // order weeks by the WeekStartInMonth (earliest-first)
+            .OrderBy(ws => ws.WeekStartInMonth)
+            .ToList();
+
+        mInfo.Weeks = weekSummaries;
+        return mInfo;
+    }
+
+    // Toggle expansion of a month (monthNumber 1..12)
+    private void ToggleMonth(int month)
+    {
+        if (_isFullYearSelected)
+        {
+            if (_expandedMonths.Contains(month)) _expandedMonths.Remove(month);
+            else _expandedMonths.Add(month);
+        }
+    }
+
+    // Year changed handler
+    private void OnYearChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e?.Value?.ToString(), out var year))
+        {
+            _selectedYear = year;
+            // rebuild months for the new year using the loaded entries
+            if (_entriesResult?.IsSuccess == true && _entriesResult.Data != null)
+            {
+                var entries = _entriesResult.Data.Where(x => x.StartDateTime.LocalDateTime.Year == _selectedYear).ToList();
+                var monthsDict = entries.GroupBy(x => x.StartDateTime.LocalDateTime.Month).ToDictionary(g => g.Key, g => g.ToList());
+
+                var monthSummaries = monthsDict.OrderBy(g => g.Key).Select(kv => BuildMonthSummary(_selectedYear, kv.Key, kv.Value)).ToList();
+                _availableMonthsForYear = monthSummaries.Select(m => new MonthSummary { Month = m.Month, Name = m.Name }).ToList();
+                _monthsInSelectedYearOrdered = monthSummaries;
+                _expandedMonths.Clear();
+                _isFullYearSelected = true;
+                _selectedPeriodValue = "FULL";
+                ComputeYearTotals();
+                StateHasChanged();
+            }
+        }
+    }
+
+    // Period changed handler (value "FULL" or "MM|M")
+    private void OnPeriodChanged(ChangeEventArgs e)
+    {
+        var val = e?.Value?.ToString() ?? "FULL";
+        _selectedPeriodValue = val;
+
+        if (val == "FULL")
+        {
+            _isFullYearSelected = true;
+            _singleSelectedMonth = null;
+            _expandedMonths.Clear();
+            ComputeYearTotals();
+        }
+        else
+        {
+            _isFullYearSelected = false;
+            // the value has the form "MM|M" created earlier; parse month
+            var parts = val.Split('|');
+            if (parts.Length == 2 && int.TryParse(parts[1], out var month))
+            {
+                _singleSelectedMonth = _monthsInSelectedYearOrdered.FirstOrDefault(m => m.Month == month);
+                // ensure the single month is present; compute year totals too
+                ComputeYearTotals();
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    // compute totals for the currently selected year
+    private void ComputeYearTotals()
+    {
+        _yearTotalDuration = TimeSpan.Zero;
+        _yearTotalWage = 0.0;
+
+        if (_monthsInSelectedYearOrdered != null)
+        {
+            foreach (var m in _monthsInSelectedYearOrdered)
+            {
+                _yearTotalDuration = _yearTotalDuration.Add(m.TotalDuration);
+                _yearTotalWage += m.TotalWage;
+            }
+        }
+    }
+
+    // =========================
+    // Utility & formatting
+    // =========================
+
+    private static bool TryParseDuration(string? durationStr, out TimeSpan ts)
+    {
+        ts = TimeSpan.Zero;
+        if (string.IsNullOrWhiteSpace(durationStr)) return false;
+
+        // Try standard TimeSpan.Parse/TryParse first (accepts "hh:mm:ss", "c", etc.)
+        if (TimeSpan.TryParse(durationStr, CultureInfo.InvariantCulture, out ts)) return true;
+
+        // Try more permissive versions
+        if (TimeSpan.TryParse(durationStr, out ts)) return true;
+
+        // fallback: try hh:mm
+        if (TimeSpan.TryParseExact(durationStr, @"hh\:mm", CultureInfo.InvariantCulture, out ts)) return true;
+
+        return false;
+    }
+
+    private static string FormatTimeSpan(TimeSpan ts)
+    {
+        // Display as "H:mm" (no leading zero for hour), minutes two-digit
+        var hours = (int)ts.TotalHours;
+        var minutes = ts.Minutes;
+        return $"{hours}:{minutes:D2}";
+    }
+
+    private static string FormatDateOnly(DateTime dt)
+    {
+        return dt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatTimeRange(DateTimeOffset start, string durationStr)
+    {
+        if (!TryParseDuration(durationStr, out var dur))
+        {
+            // fallback: only start time
+            return start.LocalDateTime.ToString("HH:mm");
+        }
+
+        var end = start.LocalDateTime.Add(dur);
+        // format HH:mm - HH:mm (end might be next day)
+        return $"{start.LocalDateTime:HH:mm} - {end:HH:mm}";
+    }
+
+    // returns Monday of the ISO week containing the date
+    private static DateTime GetMondayOfWeek(DateTime date)
+    {
+        // ISO weeks start Monday; DateTime.DayOfWeek has Monday = 1, Sunday = 0
+        int diff = date.DayOfWeek == DayOfWeek.Sunday ? -6 : DayOfWeek.Monday - date.DayOfWeek;
+        return date.AddDays(diff).Date;
+    }
+
+    // =========================
+    // Small DTOs for grouping
+    // =========================
+
+    private class MonthSummary
+    {
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public TimeSpan TotalDuration { get; set; } = TimeSpan.Zero;
+        public double TotalWage { get; set; } = 0.0;
+        public List<WeekSummary> Weeks { get; set; } = new();
+    }
+
+    private class WeekSummary
+    {
+        public int WeekOfYear { get; set; }
+        public DateTime WeekStartInMonth { get; set; }
+        public DateTime WeekEndInMonth { get; set; }
+        public List<WorkEntryDto> Entries { get; set; } = new();
+        public TimeSpan TotalDuration { get; set; } = TimeSpan.Zero;
+        public double TotalWage { get; set; } = 0.0;
     }
 }

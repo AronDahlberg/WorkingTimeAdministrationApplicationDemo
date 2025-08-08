@@ -6,5 +6,6 @@ namespace WTA_ClientApp.Services
     public interface IWorkTimeService
     {
         Task<ServiceResult<object>> AddWorkEntryAsync(AddWorkEntryDto dto);
+        Task<ServiceResult<ICollection<WorkEntryDto>>> GetWorkEntriesAsync(int employeeId);
     }
 }
