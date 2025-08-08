@@ -1,8 +1,14 @@
 ﻿@page "/users/profile/{UserId}"
+@using System.Security.Claims
+@using System.Globalization
 @using WTA_ClientApp.Common
 @using WTA_ClientApp.Services
 @using WTA_ClientApp.Services.Base
+@using WTA_ClientApp.Providers
 @inject IUserService UserService
+@inject ApiAuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
 <h3>User Profile</h3>
 
 @if (_isLoading)
@@ -24,30 +30,153 @@ else if (!_result.IsSuccess)
 else
 {
     <div class="card">
-        <div class="card-body ps-4">
-            <h5 class="card-title mb-3 fw-bold">@_result.Data!.FirstName @_result.Data.LastName</h5>
-            <dl class="row">
-                <dt class="col-sm-3">Email</dt>
-                <dd class="col-sm-9">@_result.Data.Email</dd>
-                <dt class="col-sm-3">Phone</dt>
-                <dd class="col-sm-9">@_result.Data.PhoneNumber</dd>
-                <dt class="col-sm-3">Emergency Contact Phone</dt>
-                <dd class="col-sm-9">@_result.Data.EmergencyContactNumber</dd>
-                <dt class="col-sm-3">Hourly Wage</dt>
-                <dd class="col-sm-9">@_result.Data.HourlyWage kr/t</dd>
-                <dt class="col-sm-3">SSN</dt>
-                <dd class="col-sm-9">@_result.Data.SocialSecurityNumber</dd>
-                <dt class="col-sm-3">Country</dt>
-                <dd class="col-sm-9">@_result.Data.Country</dd>
-                <dt class="col-sm-3">City</dt>
-                <dd class="col-sm-9">@_result.Data.City</dd>
-                <dt class="col-sm-3">Address</dt>
-                <dd class="col-sm-9">@_result.Data.Address</dd>
-                <dt class="col-sm-3">Postal Code</dt>
-                <dd class="col-sm-9">@_result.Data.PostalCode</dd>
-            </dl>
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+                <h5 class="card-title mb-3 fw-bold">@_result.Data!.FirstName @_result.Data.LastName</h5>
+
+                @if (!_editMode)
+                {
+                    <button class="btn btn-sm btn-outline-primary" @onclick="EnterEditMode">Edit</button>
+                }
+                else
+                {
+                    <div>
+                        <button class="btn btn-sm btn-success me-2" form="profileEditForm" type="submit" disabled="@_isSaving">
+                            @(_isSaving ? "Saving..." : "Save")
+                        </button>
+                        <button class="btn btn-sm btn-secondary" @onclick="CancelEdit" disabled="@_isSaving">Cancel</button>
+                    </div>
+                }
+            </div>
+
+            @if (!_editMode)
+            {
+                <dl class="row">
+                    <dt class="col-sm-3">Email</dt>
+                    <dd class="col-sm-9">@_result.Data.Email</dd>
+
+                    <dt class="col-sm-3">Phone</dt>
+                    <dd class="col-sm-9">@_result.Data.PhoneNumber</dd>
+
+                    <dt class="col-sm-3">Emergency Contact Phone</dt>
+                    <dd class="col-sm-9">@_result.Data.EmergencyContactNumber</dd>
+
+                    <dt class="col-sm-3">Hourly Wage</dt>
+                    <dd class="col-sm-9">@_result.Data.HourlyWage.ToString("0.##", CultureInfo.InvariantCulture) kr/t</dd>
+
+                    <dt class="col-sm-3">SSN</dt>
+                    <dd class="col-sm-9">@_result.Data.SocialSecurityNumber</dd>
+
+                    <dt class="col-sm-3">Country</dt>
+                    <dd class="col-sm-9">@_result.Data.Country</dd>
+
+                    <dt class="col-sm-3">City</dt>
+                    <dd class="col-sm-9">@_result.Data.City</dd>
+
+                    <dt class="col-sm-3">Address</dt>
+                    <dd class="col-sm-9">@_result.Data.Address</dd>
+
+                    <dt class="col-sm-3">Postal Code</dt>
+                    <dd class="col-sm-9">@_result.Data.PostalCode</dd>
+                </dl>
+            }
+            else
+            {
+                <EditForm Model="_editModel" OnValidSubmit="SaveEdit" id="profileEditForm">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3 row">
+                        <label class="col-sm-3 col-form-label">Email</label>
+                        <div class="col-sm-9">
+                            <InputText class="form-control" @bind-Value="_editModel.Email" />
+                            <ValidationMessage For="@(() => _editModel.Email)" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3 row">
+                        <label class="col-sm-3 col-form-label">Phone</label>
+                        <div class="col-sm-9">
+                            <InputText class="form-control" @bind-Value="_editModel.PhoneNumber" />
+                            <ValidationMessage For="@(() => _editModel.PhoneNumber)" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3 row">
+                        <label class="col-sm-3 col-form-label">Emergency Contact Phone</label>
+                        <div class="col-sm-9">
+                            <InputText class="form-control" @bind-Value="_editModel.EmergencyContactNumber" />
+                            <ValidationMessage For="@(() => _editModel.EmergencyContactNumber)" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3 row">
+                        <label class="col-sm-3 col-form-label">Hourly Wage</label>
+                        <div class="col-sm-9">
+                            @if (_isAdmin)
+                            {
+                                <InputNumber class="form-control" @bind-Value="_editModel.HourlyWage" step="0.01" />
+                                <ValidationMessage For="@(() => _editModel.HourlyWage)" />
+                            }
+                            else
+                            {
+                                <div class="form-control-plaintext">@_result.Data.HourlyWage.ToString("0.##", CultureInfo.InvariantCulture) kr/t</div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-3 row">
+                        <label class="col-sm-3 col-form-label">SSN</label>
+                        <div class="col-sm-9">
+                            <InputText class="form-control" @bind-Value="_editModel.SocialSecurityNumber" />
+                            <ValidationMessage For="@(() => _editModel.SocialSecurityNumber)" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3 row">
+                        <label class="col-sm-3 col-form-label">Country</label>
+                        <div class="col-sm-9">
+                            <InputText class="form-control" @bind-Value="_editModel.Country" />
+                            <ValidationMessage For="@(() => _editModel.Country)" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3 row">
+                        <label class="col-sm-3 col-form-label">City</label>
+                        <div class="col-sm-9">
+                            <InputText class="form-control" @bind-Value="_editModel.City" />
+                            <ValidationMessage For="@(() => _editModel.City)" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3 row">
+                        <label class="col-sm-3 col-form-label">Address</label>
+                        <div class="col-sm-9">
+                            <InputText class="form-control" @bind-Value="_editModel.Address" />
+                            <ValidationMessage For="@(() => _editModel.Address)" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3 row">
+                        <label class="col-sm-3 col-form-label">Postal Code</label>
+                        <div class="col-sm-9">
+                            <InputText class="form-control" @bind-Value="_editModel.PostalCode" />
+                            <ValidationMessage For="@(() => _editModel.PostalCode)" />
+                        </div>
+                    </div>
+                </EditForm>
+            }
         </div>
     </div>
+
+    @if (!string.IsNullOrEmpty(_saveError))
+    {
+        <div class="mt-2 alert alert-danger">@_saveError</div>
+    }
+    @if (_saveSuccess)
+    {
+        <div class="mt-2 alert alert-success">Profile updated.</div>
+    }
 }
 
 @code {
@@ -57,15 +186,123 @@ else
     private ServiceResult<UserDto>? _result;
     private bool _isLoading = true;
 
+    // edit mode state
+    private bool _editMode;
+    private bool _isSaving;
+    private UserDto _editModel = new();
+    private string? _saveError;
+    private bool _saveSuccess;
+
+    // admin flag (to allow editing HourlyWage)
+    private bool _isAdmin;
+
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            _result = await UserService.GetUserByIdAsync(UserId);
+            await LoadProfileAsync();
+
+            var auth = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = auth.User;
+            if (user?.Identity?.IsAuthenticated ?? false)
+            {
+                _isAdmin = user.Claims.Any(c =>
+                    string.Equals(c.Type, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(c.Type, "role", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(c.Type, "roles", StringComparison.OrdinalIgnoreCase))
+                    && user.Claims.Any(c => string.Equals(c.Value, "Admin", StringComparison.OrdinalIgnoreCase));
+            }
         }
         finally
         {
             _isLoading = false;
+        }
+    }
+
+    private async Task LoadProfileAsync()
+    {
+        _isLoading = true;
+        _result = await UserService.GetUserByIdAsync(UserId);
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private void EnterEditMode()
+    {
+        if (_result?.Data == null) return;
+
+        // Clone current data into editModel to avoid mutating the displayed data until save
+        _editModel = new UserDto
+            {
+                UserId = _result.Data.UserId,
+                Email = _result.Data.Email,
+                EmployeeId = _result.Data.EmployeeId,
+                FirstName = _result.Data.FirstName,
+                LastName = _result.Data.LastName,
+                SocialSecurityNumber = _result.Data.SocialSecurityNumber,
+                PhoneNumber = _result.Data.PhoneNumber,
+                EmergencyContactNumber = _result.Data.EmergencyContactNumber,
+                Country = _result.Data.Country,
+                City = _result.Data.City,
+                Address = _result.Data.Address,
+                PostalCode = _result.Data.PostalCode,
+                HourlyWage = _result.Data.HourlyWage
+            };
+
+        _saveError = null;
+        _saveSuccess = false;
+        _editMode = true;
+    }
+
+    private void CancelEdit()
+    {
+        _editMode = false;
+        _saveError = null;
+        _saveSuccess = false;
+    }
+
+    private async Task SaveEdit()
+    {
+        _saveError = null;
+        _saveSuccess = false;
+
+        // If not admin, ensure HourlyWage wasn't changed client-side (defensive)
+        if (!_isAdmin && _result?.Data != null)
+        {
+            _editModel.HourlyWage = _result.Data.HourlyWage;
+        }
+
+        _isSaving = true;
+
+        try
+        {
+            // UpdateUserAsync returns ServiceResult<object> (we ignore any res.Data)
+            var res = await UserService.UpdateUserAsync(_editModel);
+
+            if (res is null)
+            {
+                _saveError = "No response from server.";
+            }
+            else if (!res.IsSuccess)
+            {
+                _saveError = res.ErrorMessage ?? $"Server returned {(int?)res.StatusCode}";
+            }
+            else
+            {
+                // success -> reload authoritative data from server (so invalid changes are not shown)
+                await LoadProfileAsync();
+
+                _saveSuccess = true;
+                _editMode = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _saveError = $"Unexpected error: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
         }
     }
 }
